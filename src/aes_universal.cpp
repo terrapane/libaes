@@ -114,8 +114,8 @@ AESUniversal::AESUniversal(const AESUniversal &other) noexcept : AESUniversal()
 {
     Nr = other.Nr;
     Nk = other.Nk;
-    std::copy(other.W.begin(), other.W.end(), W.begin());
-    std::copy(other.DW.begin(), other.DW.end(), DW.begin());
+    W = other.W;
+    DW = other.DW;
 }
 
 /*
@@ -142,8 +142,8 @@ AESUniversal::AESUniversal(AESUniversal &&other) noexcept : AESUniversal()
 {
     Nr = other.Nr;
     Nk = other.Nk;
-    std::copy(other.W.begin(), other.W.end(), W.begin());
-    std::copy(other.DW.begin(), other.DW.end(), DW.begin());
+    W = other.W;
+    DW = other.DW;
 }
 
 /*
@@ -191,8 +191,8 @@ AESUniversal &AESUniversal::operator=(const AESUniversal &other)
 
     Nr = other.Nr;
     Nk = other.Nk;
-    std::copy(other.W.begin(), other.W.end(), W.begin());
-    std::copy(other.DW.begin(), other.DW.end(), DW.begin());
+    W = other.W;
+    DW = other.DW;
 
     return *this;
 }
@@ -221,8 +221,8 @@ AESUniversal &AESUniversal::operator=(AESUniversal &&other) noexcept
 
     Nr = other.Nr;
     Nk = other.Nk;
-    std::copy(other.W.begin(), other.W.end(), W.begin());
-    std::copy(other.DW.begin(), other.DW.end(), DW.begin());
+    W = other.W;
+    DW = other.DW;
 
     return *this;
 }

@@ -302,6 +302,14 @@ bool AES::operator==(const AES &other) const
                     dynamic_cast<AESUniversal *>(aes_engine.get());
                 AESUniversal *other_engine =
                     dynamic_cast<AESUniversal *>(other.aes_engine.get());
+                if ((this_engine == nullptr) && (other_engine == nullptr))
+                {
+                    return true;
+                }
+                if ((this_engine == nullptr) || (other_engine == nullptr))
+                {
+                    return false;
+                }
                 result = (*this_engine == *other_engine);
             }
             break;
@@ -312,6 +320,14 @@ bool AES::operator==(const AES &other) const
                     dynamic_cast<AESIntel *>(aes_engine.get());
                 AESIntel *other_engine =
                     dynamic_cast<AESIntel *>(other.aes_engine.get());
+                if ((this_engine == nullptr) && (other_engine == nullptr))
+                {
+                    return true;
+                }
+                if ((this_engine == nullptr) || (other_engine == nullptr))
+                {
+                    return false;
+                }
                 result = (*this_engine == *other_engine);
             }
             break;

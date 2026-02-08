@@ -210,31 +210,29 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
     A = B.data();
     if (!alternative_iv.empty())
     {
-        std::copy(alternative_iv.begin(), alternative_iv.end(), A);
+        std::ranges::copy(alternative_iv, A);
     }
     else
     {
-        std::copy(AES_Key_Wrap_Default_IV.begin(),
-                  AES_Key_Wrap_Default_IV.end(),
-                  A);
+        std::ranges::copy(AES_Key_Wrap_Default_IV, A);
     }
 
     // Perform the key wrap
-    std::copy(plaintext.begin(), plaintext.end(), ciphertext.data() + 8);
+    std::ranges::copy(plaintext, ciphertext.begin() + 8);
     for (j = 0, t = 1; j < 6; j++)
     {
         for (i = 1, R = ciphertext.data() + 8; i <= n; i++, t++, R += 8)
         {
-            std::copy(R, R + 8, B.data() + 8);
+            std::ranges::copy(std::span{R, 8}, B.data() + 8);
             aes.Encrypt(B, B);
             for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8)
             {
                 A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
             }
-            std::copy(B.begin() + 8, B.end(), R);
+            std::ranges::copy(std::span{B}.subspan(8), R);
         }
     }
-    std::copy(A, A + 8, ciphertext.begin());
+    std::ranges::copy(std::span{A, 8}, ciphertext.begin());
 }
 
 /*
@@ -305,10 +303,10 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
 
     // Assign A to be C[0] (first 64-bit block of the ciphertext)
     A = B.data();
-    std::copy(ciphertext.begin(), ciphertext.begin() + 8, A);
+    std::ranges::copy(std::span{ciphertext}.first(8), A);
 
     // Perform the key wrap
-    std::copy(ciphertext.begin() + 8, ciphertext.end(), plaintext.begin());
+    std::ranges::copy(std::span{ciphertext}.subspan(8), plaintext.begin());
     for (j = 0, t = 6 * n; j < 6; j++)
     {
         for (i = n, R = plaintext.data() + ciphertext.size() - 16;
@@ -319,9 +317,9 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
             {
                 A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
             }
-            std::copy(R, R + 8, B.begin() + 8);
+            std::ranges::copy(std::span{R, 8}, B.begin() + 8);
             aes.Decrypt(B, B);
-            std::copy(B.begin() + 8, B.end(), R);
+            std::ranges::copy(std::span{B}.subspan(8), R);
         }
     }
 
@@ -329,19 +327,19 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     // so that the caller can perform integrity checking
     if (!integrity.empty())
     {
-        std::copy(A, A + 8, integrity.begin());
+        std::ranges::copy(std::span{A, 8}, integrity.begin());
         return true;
     }
 
     // Perform integrity checking internally
     if (alternative_iv.size() == 8)
     {
-        return std::equal(alternative_iv.begin(), alternative_iv.end(), A);
+        return std::ranges::equal(alternative_iv,
+                                  std::span{A, alternative_iv.size()});
     }
 
-    return std::equal(AES_Key_Wrap_Default_IV.begin(),
-                      AES_Key_Wrap_Default_IV.end(),
-                      A);
+    return std::ranges::equal(AES_Key_Wrap_Default_IV,
+                              std::span{A, AES_Key_Wrap_Default_IV.size()});
 }
 
 /*
@@ -421,34 +419,30 @@ std::size_t AESKeyWrap::WrapWithPadding(
     // Store the initialization vector as the first 4 octets of the ciphertext
     if (alternative_iv.empty())
     {
-        std::copy(Alternative_IV.begin(),
-                  Alternative_IV.end(),
-                  ciphertext.begin());
+        std::ranges::copy(Alternative_IV, ciphertext.begin());
     }
     else
     {
-        std::copy(alternative_iv.begin(),
-                  alternative_iv.end(),
-                  ciphertext.begin());
+        std::ranges::copy(alternative_iv, ciphertext.begin());
     }
 
     // Store the original message length in network byte order as the
     // second 4 octets of the buffer
     network_word = BitUtil::NetworkByteOrder(
                                 static_cast<std::uint32_t>(plaintext.size()));
-    std::copy(reinterpret_cast<std::uint8_t *>(&network_word),
-              reinterpret_cast<std::uint8_t *>(&network_word) + 4,
-              ciphertext.begin() + 4);
+    std::ranges::copy(
+        std::span{reinterpret_cast<std::uint8_t *>(&network_word), 4},
+        ciphertext.begin() + 4);
 
     // Copy the plaintext into the ciphertext buffer for encryption
-    std::copy(plaintext.begin(), plaintext.end(), ciphertext.begin() + 8);
+    std::ranges::copy(plaintext, ciphertext.data() + 8);
 
     // Pad the buffer to be an even 8 octets with zeros
     if (padding_length > 0)
     {
-        std::fill(ciphertext.begin() + plaintext.size() + 8,
-                  ciphertext.begin() + plaintext.size() + 8 + padding_length,
-                  std::uint8_t(0));
+        std::ranges::fill(
+            std::span{ciphertext}.subspan(plaintext.size() + 8, padding_length),
+            static_cast<std::uint8_t>(0));
     }
 
     // Encrypt the plaintext
@@ -529,14 +523,12 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
                     plaintext_buffer);
 
         // Copy the integrity array
-        std::copy(plaintext_buffer.begin(),
-                  plaintext_buffer.begin() + 8,
-                  integrity_data.begin());
+        std::ranges::copy(std::span{plaintext_buffer}.first(8),
+                          integrity_data.begin());
 
         // Copy the plaintext into the output buffer
-        std::copy(plaintext_buffer.begin() + 8,
-                  plaintext_buffer.end(),
-                  plaintext.begin());
+        std::ranges::copy(std::span{plaintext_buffer}.subspan(8),
+                          plaintext.begin());
     }
     else
     {
@@ -552,27 +544,26 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
     // Verify that the first 4 octets of the integrity data are correct
     if (alternative_iv.size() == 4)
     {
-        if (!std::equal(alternative_iv.begin(),
-                        alternative_iv.end(),
-                        integrity_data.begin()))
+        if (!std::ranges::equal(
+                alternative_iv,
+                std::span{integrity_data}.first(alternative_iv.size())))
         {
             return 0;
         }
     }
     else
     {
-        if (!std::equal(Alternative_IV.begin(),
-                        Alternative_IV.end(),
-                        integrity_data.begin()))
+        if (!std::ranges::equal(
+                Alternative_IV,
+                std::span{integrity_data}.first(Alternative_IV.size())))
         {
             return 0;
         }
     }
 
     // Copy the integrity check octets
-    std::copy(integrity_data.begin() + 4,
-              integrity_data.begin() + 8,
-              reinterpret_cast<std::uint8_t *>(&network_word));
+    std::ranges::copy(std::span{integrity_data}.subspan(4, 4),
+                      reinterpret_cast<std::uint8_t *>(&network_word));
 
     // Ensure the message length indicator has a valid range
     message_length_indicator = BitUtil::NetworkByteOrder(network_word);

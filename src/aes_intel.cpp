@@ -112,8 +112,8 @@ AESIntel::AESIntel(const std::span<const std::uint8_t> key) :
 AESIntel::AESIntel(const AESIntel &other) noexcept : AESIntel()
 {
     Nr = other.Nr;
-    std::ranges::copy(std::span{other.W}, std::span{W}.begin());
-    std::ranges::copy(std::span{other.DW}, std::span{DW}.begin());
+    W = other.W;
+    DW = other.DW;
 }
 
 /*
@@ -139,8 +139,8 @@ AESIntel::AESIntel(const AESIntel &other) noexcept : AESIntel()
 AESIntel::AESIntel(AESIntel &&other) noexcept : AESIntel()
 {
     Nr = other.Nr;
-    std::ranges::copy(std::span{other.W}, std::span{W}.begin());
-    std::ranges::copy(std::span{other.DW}, std::span{DW}.begin());
+    W = other.W;
+    DW = other.DW;
 }
 
 /*
@@ -162,8 +162,6 @@ AESIntel::AESIntel(AESIntel &&other) noexcept : AESIntel()
 AESIntel::~AESIntel()
 {
     SecUtil::SecureErase(&Nr, sizeof(Nr));
-    SecUtil::SecureErase(static_cast<void *>(W), sizeof(W));
-    SecUtil::SecureErase(static_cast<void *>(DW), sizeof(DW));
     SecUtil::SecureErase(&T1, sizeof(T1));
     SecUtil::SecureErase(&T2, sizeof(T2));
     SecUtil::SecureErase(&T3, sizeof(T3));
@@ -192,8 +190,8 @@ AESIntel &AESIntel::operator=(const AESIntel &other)
     if (this == &other) return *this;
 
     Nr = other.Nr;
-    std::ranges::copy(std::span{other.W}, std::span{W}.begin());
-    std::ranges::copy(std::span{other.DW}, std::span{DW}.begin());
+    W = other.W;
+    DW = other.DW;
 
     return *this;
 }
@@ -221,8 +219,8 @@ AESIntel &AESIntel::operator=(AESIntel &&other) noexcept
     if (this == &other) return *this;
 
     Nr = other.Nr;
-    std::ranges::copy(std::span{other.W}, std::span{W}.begin());
-    std::ranges::copy(std::span{other.DW}, std::span{DW}.begin());
+    W = other.W;
+    DW = other.DW;
 
     return *this;
 }
@@ -248,8 +246,8 @@ AESIntel &AESIntel::operator=(AESIntel &&other) noexcept
 void AESIntel::SetKey(const std::span<const std::uint8_t> key)
 {
     // Zero the key schedule
-    SecUtil::SecureErase(static_cast<void *>(W), sizeof(W));
-    SecUtil::SecureErase(static_cast<void *>(DW), sizeof(DW));
+    SecUtil::SecureErase(W);
+    SecUtil::SecureErase(DW);
 
     // Create the encryption round keys given the key length (W)
     switch (key.size())
@@ -453,8 +451,8 @@ void AESIntel::SetKey(const std::span<const std::uint8_t> key)
 void AESIntel::ClearKeyState()
 {
     SecUtil::SecureErase(&Nr, sizeof(Nr));
-    SecUtil::SecureErase(static_cast<void *>(W), sizeof(W));
-    SecUtil::SecureErase(static_cast<void *>(DW), sizeof(DW));
+    SecUtil::SecureErase(W);
+    SecUtil::SecureErase(DW);
     SecUtil::SecureErase(&T1, sizeof(T1));
     SecUtil::SecureErase(&T2, sizeof(T2));
     SecUtil::SecureErase(&T3, sizeof(T3));

@@ -356,7 +356,7 @@ void AESIntel::SetKey(const std::span<const std::uint8_t> key)
             // Read 16 more octets, starting at +8 (the high-order bits are
             // part of what was read in W[0]) to avoid overrun
             W[1] = _mm_loadu_si128(
-                            reinterpret_cast<const __m128i *>(key.data() + 16));
+                reinterpret_cast<const __m128i *>(key.subspan(16).data()));
 
             {
                 auto KeyAssist = [&](std::size_t i, __m128i round_key)

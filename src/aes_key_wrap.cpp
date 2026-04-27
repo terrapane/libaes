@@ -54,9 +54,8 @@ AESKeyWrap::AESKeyWrap() :
     n{},
     t{},
     tt{},
-    A{},
     B{},
-    R{},
+    A{B},
     network_word{},
     padding_length{},
     message_length_indicator{},
@@ -94,9 +93,8 @@ AESKeyWrap::AESKeyWrap(const std::span<const std::uint8_t> key) :
     n{},
     t{},
     tt{},
-    A{},
     B{},
-    R{},
+    A{B},
     network_word{},
     padding_length{},
     message_length_indicator{},
@@ -206,33 +204,36 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
     // Determine the number of 64-bit blocks to process
     n = (plaintext.size() >> 3);
 
+    // Assign a view over the intermediary buffer
+    // PEJ std::span<uint8_t> A = B;
+
     // Assign the IV
-    A = B.data();
     if (!alternative_iv.empty())
     {
-        std::ranges::copy(alternative_iv, A);
+        std::ranges::copy(alternative_iv, A.begin());
     }
     else
     {
-        std::ranges::copy(AES_Key_Wrap_Default_IV, A);
+        std::ranges::copy(AES_Key_Wrap_Default_IV, A.begin());
     }
 
     // Perform the key wrap
     std::ranges::copy(plaintext, ciphertext.begin() + 8);
     for (j = 0, t = 1; j < 6; j++)
     {
-        for (i = 1, R = ciphertext.data() + 8; i <= n; i++, t++, R += 8)
+        std::span<uint8_t>::iterator R;
+        for (i = 1, R = ciphertext.subspan(8).begin(); i <= n; i++, t++, R += 8)
         {
-            std::ranges::copy(std::span{R, 8}, B.data() + 8);
+            std::ranges::copy(std::span(R, 8), A.last(8).begin());
             aes.Encrypt(B, B);
             for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8)
             {
                 A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
             }
-            std::ranges::copy(std::span{B}.subspan(8), R);
+            std::ranges::copy(A.last(8), R);
         }
     }
-    std::ranges::copy(std::span{A, 8}, ciphertext.begin());
+    std::ranges::copy(A.first(8), ciphertext.begin());
 }
 
 /*
@@ -301,15 +302,21 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     // Determine the number of 64-bit blocks to process
     n = (ciphertext.size() - 8) >> 3;
 
+    // Assign a view over the intermediary buffer
+    // PEJ std::span<uint8_t> A = B;
+
     // Assign A to be C[0] (first 64-bit block of the ciphertext)
-    A = B.data();
-    std::ranges::copy(std::span{ciphertext}.first(8), A);
+    std::ranges::copy(ciphertext.first(8), A.begin());
 
     // Perform the key wrap
-    std::ranges::copy(std::span{ciphertext}.subspan(8), plaintext.begin());
+    std::ranges::copy(ciphertext.subspan(8), plaintext.begin());
     for (j = 0, t = 6 * n; j < 6; j++)
     {
-        for (i = n, R = plaintext.data() + ciphertext.size() - 16;
+        std::span<uint8_t>::iterator R;
+        for (i = n,
+             R = plaintext.begin() +
+                 static_cast<std::span<uint8_t>::difference_type>(
+                     ciphertext.size() - 16);
              i >= 1;
              i--, t--, R -= 8)
         {
@@ -317,9 +324,9 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
             {
                 A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
             }
-            std::ranges::copy(std::span{R, 8}, B.begin() + 8);
+            std::ranges::copy(std::span(R, 8), A.last(8).begin());
             aes.Decrypt(B, B);
-            std::ranges::copy(std::span{B}.subspan(8), R);
+            std::ranges::copy(A.last(8), R);
         }
     }
 
@@ -327,7 +334,7 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     // so that the caller can perform integrity checking
     if (!integrity.empty())
     {
-        std::ranges::copy(std::span{A, 8}, integrity.begin());
+        std::ranges::copy(A.first(8), integrity.begin());
         return true;
     }
 
@@ -335,11 +342,11 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     if (alternative_iv.size() == 8)
     {
         return std::ranges::equal(alternative_iv,
-                                  std::span{A, alternative_iv.size()});
+                                  A.first(alternative_iv.size()));
     }
 
     return std::ranges::equal(AES_Key_Wrap_Default_IV,
-                              std::span{A, AES_Key_Wrap_Default_IV.size()});
+                              A.first(AES_Key_Wrap_Default_IV.size()));
 }
 
 /*
@@ -432,16 +439,16 @@ std::size_t AESKeyWrap::WrapWithPadding(
                                 static_cast<std::uint32_t>(plaintext.size()));
     std::ranges::copy(
         std::span{reinterpret_cast<std::uint8_t *>(&network_word), 4},
-        ciphertext.begin() + 4);
+        ciphertext.subspan(4).begin());
 
     // Copy the plaintext into the ciphertext buffer for encryption
-    std::ranges::copy(plaintext, ciphertext.data() + 8);
+    std::ranges::copy(plaintext, ciphertext.subspan(8).begin());
 
     // Pad the buffer to be an even 8 octets with zeros
     if (padding_length > 0)
     {
         std::ranges::fill(
-            std::span{ciphertext}.subspan(plaintext.size() + 8, padding_length),
+            ciphertext.subspan(plaintext.size() + 8, padding_length),
             static_cast<std::uint8_t>(0));
     }
 
@@ -449,17 +456,16 @@ std::size_t AESKeyWrap::WrapWithPadding(
     if (plaintext.size() <= 8)
     {
         // Encrypt using AES ECB mode
-        aes.Encrypt(std::span<const std::uint8_t, 16>(ciphertext.data(), 16),
-                    std::span<std::uint8_t, 16>(ciphertext.data(), 16));
+        aes.Encrypt(ciphertext.first<16>(), ciphertext.first<16>());
     }
     else
     {
         // Encrypt using AES Key Wrap; note that while this buffer use violates
         // the requirement that buffers be distinct when calling Wrap(), this
         // is safe given how data is positioned in the buffer
-        Wrap({ciphertext.data() + 8, plaintext.size() + padding_length},
-             {ciphertext.data(), plaintext.size() + padding_length + 8},
-             {ciphertext.data(), 8});
+        Wrap(ciphertext.subspan(8, plaintext.size() + padding_length),
+             ciphertext.subspan(0, plaintext.size() + padding_length + 8),
+             ciphertext.first(8));
     }
 
     return plaintext.size() + padding_length + 8;
@@ -519,8 +525,7 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
     if (ciphertext.size() == 16)
     {
         // Decrypt using AES ECB mode
-        aes.Decrypt(std::span<const std::uint8_t, 16>(ciphertext.data(), 16),
-                    plaintext_buffer);
+        aes.Decrypt(ciphertext.first<16>(), plaintext_buffer);
 
         // Copy the integrity array
         std::ranges::copy(std::span{plaintext_buffer}.first(8),
@@ -534,7 +539,7 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
     {
         // Decrypt using AES Key Wrap
         if (!Unwrap(ciphertext,
-                    {plaintext.data(), ciphertext.size() - 8},
+                    plaintext.first(ciphertext.size() - 8),
                     integrity_data))
         {
             return 0;
@@ -574,9 +579,10 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
     }
 
     // Ensure that all padding bits are zero
-    std::uint8_t *p = plaintext.data() + message_length_indicator;
-    std::uint8_t *q = plaintext.data() + ciphertext.size() - 8;
-    if (!std::all_of(p, q, [](std::uint8_t v) -> bool { return v == 0; }))
+    if (!std::ranges::all_of(
+            plaintext.subspan(message_length_indicator,
+                              ciphertext.size() - 8 - message_length_indicator),
+            [](std::uint8_t v) { return v == 0; }))
     {
         return 0;
     }

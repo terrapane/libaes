@@ -70,8 +70,8 @@ AESIntel::AESIntel() noexcept :
  * AESIntel::AESIntel()
  *
  *  Description:
- *      This is a constructor for the AESIntel object that accepts a span
- *      of octets as input that contains the key.
+ *      This is a constructor for the AESIntel object that accepts a span of
+ *      octets as input that contains the key.
  *
  *  Parameters:
  *      key [in]
@@ -85,8 +85,7 @@ AESIntel::AESIntel() noexcept :
  *  Comments:
  *      None.
  */
-AESIntel::AESIntel(const std::span<const std::uint8_t> key) :
-    AESIntel()
+AESIntel::AESIntel(const std::span<const std::uint8_t> key) : AESIntel()
 {
     // Only set the key if AES-NI instructions are supported
     if (GetEngineType() == AESEngineType::Intel) SetKey(key);

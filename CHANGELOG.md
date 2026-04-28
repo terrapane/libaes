@@ -1,5 +1,12 @@
 # Change Log
 
+v1.1.5
+
+- Replaced std::copy with std::ranges::copy, etc.
+- Switched Intel AES code to use SecureArray
+- Removed pointers from AES KW and added more tests
+- Remove some pointer arithmetic from the AES Intel code
+
 v1.1.4
 
 - Updated dependencies

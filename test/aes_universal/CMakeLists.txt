@@ -23,6 +23,6 @@ target_compile_options(test_aes_universal
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>)
 
 # If speed tests are enabled, pass that to the compiler
-if(TERRA_ENABLE_AES_SPEED_TESTS)
+if(libaes_SPEED_TESTS)
     target_compile_definitions(test_aes_universal PRIVATE TERRA_ENABLE_AES_SPEED_TESTS)
 endif()

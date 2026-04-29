@@ -30,7 +30,7 @@ target_compile_options(aes
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /Zc:__cplusplus>)
 
 # Ensure compiler knows if requested to build with Intel Intrinsics
-if(TERRA_ENABLE_INTEL_INTRINSICS)
+if(libaes_ENABLE_INTEL_INTRINSICS)
     # Set the compiler definition
     target_compile_definitions(aes PRIVATE TERRA_ENABLE_INTEL_INTRINSICS)
 

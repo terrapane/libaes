@@ -31,10 +31,10 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i386|x86_64|amd64|AMD64)$")
 endif()
 
 # Option to control use of Intel Intrinsics (available only on x86/x64)
-option(TERRA_ENABLE_INTEL_INTRINSICS "Enable Intel AES Intrinsics" ${TERRA_CHECK_INTEL_TARGET})
+option(libaes_ENABLE_INTEL_INTRINSICS "Enable Intel AES Intrinsics" ${TERRA_CHECK_INTEL_TARGET})
 
 # Option to enable speed test in the AES engine tests
-option(TERRA_ENABLE_AES_SPEED_TESTS "Enable AES Engine Speed Tests" OFF)
+option(libaes_SPEED_TESTS "Enable AES Engine Speed Tests" OFF)
 
 include(CTest)
 

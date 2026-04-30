@@ -80,7 +80,6 @@ class AESKeyWrap
         std::size_t n;                          // Number of 64-bit blocks
         std::size_t t, tt;                      // Step counters
         std::array<std::uint8_t, 16> B;         // Buffer to encrypt/decrypt
-        std::span<std::uint8_t> A;              // View over the above buffer
 
         std::uint32_t network_word;             // Word in network byte order
 

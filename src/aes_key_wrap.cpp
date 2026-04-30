@@ -55,7 +55,6 @@ AESKeyWrap::AESKeyWrap() :
     t{},
     tt{},
     B{},
-    A{B},
     network_word{},
     padding_length{},
     message_length_indicator{},
@@ -94,7 +93,6 @@ AESKeyWrap::AESKeyWrap(const std::span<const std::uint8_t> key) :
     t{},
     tt{},
     B{},
-    A{B},
     network_word{},
     padding_length{},
     message_length_indicator{},
@@ -205,7 +203,7 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
     n = (plaintext.size() >> 3);
 
     // Assign a view over the intermediary buffer
-    // PEJ std::span<uint8_t> A = B;
+    std::span<uint8_t> A = B;
 
     // Assign the IV
     if (!alternative_iv.empty())
@@ -303,7 +301,7 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     n = (ciphertext.size() - 8) >> 3;
 
     // Assign a view over the intermediary buffer
-    // PEJ std::span<uint8_t> A = B;
+    std::span<uint8_t> A = B;
 
     // Assign A to be C[0] (first 64-bit block of the ciphertext)
     std::ranges::copy(ciphertext.first(8), A.begin());

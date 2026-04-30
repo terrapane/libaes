@@ -22,6 +22,7 @@
 #include <vector>
 #include <array>
 #include <aes_universal.h>
+#include <terra/stf/adapters/integral_array.h>
 #include <terra/stf/adapters/integral_vector.h>
 #include <terra/stf/stf.h>
 

@@ -9,7 +9,7 @@
  *      Paul E. Jones <paulej@packetizer.com>
  *
  *  Description:
- *      This module defines a function that will verify that the Intel
+ *      This module implements a function that will verify that the Intel
  *      processor supports the AES-NI instructions.  When calling the cpuid()
  *      function with function_id 1, bit 25 of the ecx register will contain
  *      a 1 if the AES-NI instructions are supported.  Source:
@@ -30,6 +30,7 @@
 #include <cpuid.h>
 #endif
 #endif
+#include "cpu_check.h"
 
 namespace Terra::Crypto::Cipher
 {

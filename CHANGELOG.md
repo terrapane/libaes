@@ -6,6 +6,7 @@ v1.1.5
 - Switched Intel AES code to use SecureArray
 - Removed pointers from AES KW and added more tests
 - Remove some pointer arithmetic from the AES Intel code
+- Used std::span for benefit of bounds checking
 
 v1.1.4
 

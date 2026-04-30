@@ -256,110 +256,98 @@ void AESUniversal::SetKey(const std::span<const std::uint8_t> key)
     auto r = std::span(Rcon);
 
     // Create the encryption round keys given the key length (W)
-    switch (key.size())
+    if (key.size() == 16)
     {
-        case 16:
-            Nr = 10;
-            Nk = 4;
+        Nr = 10;
+        Nk = 4;
 
-            {
-                // Define a span over W
-                auto w = std::span(W);
+        // Define a span over W
+        auto w = std::span(W);
 
-                // Fill the first Nk 32-bit words in the round key array W
-                w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
-                w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
-                w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
-                w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
+        // Fill the first Nk 32-bit words in the round key array W
+        w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
+        w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
+        w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
+        w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
 
-                // Fill the remaining word in the round key array W
-                for (std::size_t i = Nk, j = 0; i <= 40; i += Nk, j++)
-                {
-                    w[i + 0] = w[i - 4] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
-                    w[i + 1] = w[i - 3] ^ w[i + 0];
-                    w[i + 2] = w[i - 2] ^ w[i + 1];
-                    w[i + 3] = w[i - 1] ^ w[i + 2];
-                }
-            }
+        // Fill the remaining word in the round key array W
+        for (std::size_t i = Nk, j = 0; i <= 40; i += Nk, j++)
+        {
+            w[i + 0] = w[i - 4] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
+            w[i + 1] = w[i - 3] ^ w[i + 0];
+            w[i + 2] = w[i - 2] ^ w[i + 1];
+            w[i + 3] = w[i - 1] ^ w[i + 2];
+        }
+    }
+    else if (key.size() == 24)
+    {
+        Nr = 12;
+        Nk = 6;
 
-            break;
+        // Define a span over W
+        auto w = std::span(W);
 
-        case 24:
-            Nr = 12;
-            Nk = 6;
+        // Fill the first Nk words in the round key array W
+        w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
+        w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
+        w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
+        w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
+        w[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
+        w[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
 
-            {
-                // Define a span over W
-                auto w = std::span(W);
+        // Fill the remaining word in the round key array W
+        for (std::size_t i = Nk, j = 0; i <= 42; i += Nk, j++)
+        {
+            w[i + 0] = w[i - 6] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
+            w[i + 1] = w[i - 5] ^ w[i + 0];
+            w[i + 2] = w[i - 4] ^ w[i + 1];
+            w[i + 3] = w[i - 3] ^ w[i + 2];
+            w[i + 4] = w[i - 2] ^ w[i + 3];
+            w[i + 5] = w[i - 1] ^ w[i + 4];
+        }
+        w[48] = w[42] ^ SubBytes(RotWord(w[47])) ^ r[7];
+        w[49] = w[43] ^ w[48];
+        w[50] = w[44] ^ w[49];
+        w[51] = w[45] ^ w[50];
+    }
+    else if (key.size() == 32)
+    {
+        Nr = 14;
+        Nk = 8;
 
-                // Fill the first Nk words in the round key array W
-                w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
-                w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
-                w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
-                w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
-                w[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
-                w[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
+        // Define a span over W
+        auto w = std::span(W);
 
-                // Fill the remaining word in the round key array W
-                for (std::size_t i = Nk, j = 0; i <= 42; i += Nk, j++)
-                {
-                    w[i + 0] = w[i - 6] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
-                    w[i + 1] = w[i - 5] ^ w[i + 0];
-                    w[i + 2] = w[i - 4] ^ w[i + 1];
-                    w[i + 3] = w[i - 3] ^ w[i + 2];
-                    w[i + 4] = w[i - 2] ^ w[i + 3];
-                    w[i + 5] = w[i - 1] ^ w[i + 4];
-                }
-                w[48] = w[42] ^ SubBytes(RotWord(w[47])) ^ r[7];
-                w[49] = w[43] ^ w[48];
-                w[50] = w[44] ^ w[49];
-                w[51] = w[45] ^ w[50];
-            }
+        // Fill the first Nk words in the round key array W
+        w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
+        w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
+        w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
+        w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
+        w[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
+        w[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
+        w[6] = GetWordFromBuffer<std::uint_fast32_t>(key, 6);
+        w[7] = GetWordFromBuffer<std::uint_fast32_t>(key, 7);
 
-            break;
-
-        case 32:
-            Nr = 14;
-            Nk = 8;
-
-            {
-                // Define a span over W
-                auto w = std::span(W);
-
-                // Fill the first Nk words in the round key array W
-                w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
-                w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
-                w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
-                w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
-                w[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
-                w[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
-                w[6] = GetWordFromBuffer<std::uint_fast32_t>(key, 6);
-                w[7] = GetWordFromBuffer<std::uint_fast32_t>(key, 7);
-
-                // Fill the remaining word in the round key array W
-                for (std::size_t i = Nk, j = 0; i <= 48; i += Nk, j++)
-                {
-                    w[i + 0] = w[i - 8] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
-                    w[i + 1] = w[i - 7] ^ w[i + 0];
-                    w[i + 2] = w[i - 6] ^ w[i + 1];
-                    w[i + 3] = w[i - 5] ^ w[i + 2];
-                    w[i + 4] = w[i - 4] ^ SubBytes(w[i + 3]);
-                    w[i + 5] = w[i - 3] ^ w[i + 4];
-                    w[i + 6] = w[i - 2] ^ w[i + 5];
-                    w[i + 7] = w[i - 1] ^ w[i + 6];
-                }
-                w[56] = w[48] ^ SubBytes(RotWord(w[55])) ^ r[6];
-                w[57] = w[49] ^ w[56];
-                w[58] = w[50] ^ w[57];
-                w[59] = w[51] ^ w[58];
-            }
-
-            break;
-
-        default:
-            throw AESException("Invalid key length provided");
-
-            break;
+        // Fill the remaining word in the round key array W
+        for (std::size_t i = Nk, j = 0; i <= 48; i += Nk, j++)
+        {
+            w[i + 0] = w[i - 8] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
+            w[i + 1] = w[i - 7] ^ w[i + 0];
+            w[i + 2] = w[i - 6] ^ w[i + 1];
+            w[i + 3] = w[i - 5] ^ w[i + 2];
+            w[i + 4] = w[i - 4] ^ SubBytes(w[i + 3]);
+            w[i + 5] = w[i - 3] ^ w[i + 4];
+            w[i + 6] = w[i - 2] ^ w[i + 5];
+            w[i + 7] = w[i - 1] ^ w[i + 6];
+        }
+        w[56] = w[48] ^ SubBytes(RotWord(w[55])) ^ r[6];
+        w[57] = w[49] ^ w[56];
+        w[58] = w[50] ^ w[57];
+        w[59] = w[51] ^ w[58];
+    }
+    else
+    {
+        throw AESException("Invalid key length provided");
     }
 
     // Populate decryption round key array (DW)

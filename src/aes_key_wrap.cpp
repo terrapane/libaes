@@ -215,8 +215,10 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
         std::ranges::copy(AES_Key_Wrap_Default_IV, A.begin());
     }
 
-    // Perform the key wrap
+    // Copy the plaintext into the ciphertext (after the initial 8 octets)
     std::ranges::copy(plaintext, ciphertext.begin() + 8);
+
+    // Perform the key wrap
     for (j = 0, t = 1; j < 6; j++)
     {
         auto R = ciphertext.begin();
@@ -307,7 +309,7 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     // Assign A to be C[0] (first 64-bit block of the ciphertext)
     std::ranges::copy(ciphertext.first(8), A.begin());
 
-    // Copy the ciphertext (after the integrity octets) into plaintext
+    // Copy the rest of ciphertext into plaintext
     std::ranges::copy(ciphertext.subspan(8), plaintext.begin());
 
     // Perform the key unwrap

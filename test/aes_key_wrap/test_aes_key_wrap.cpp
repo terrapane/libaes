@@ -1,7 +1,7 @@
 /*
  *  aes_key_wrap_test.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <array>
 #include <ranges>
+#include <algorithm>
 #include <terra/crypto/cipher/aes_key_wrap.h>
 #include <terra/stf/stf.h>
 

@@ -1,7 +1,7 @@
 /*
  *  aes_key_wrap.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -219,9 +219,10 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
     std::ranges::copy(plaintext, ciphertext.begin() + 8);
     for (j = 0, t = 1; j < 6; j++)
     {
-        std::span<uint8_t>::iterator R;
-        for (i = 1, R = ciphertext.subspan(8).begin(); i <= n; i++, t++, R += 8)
+        auto R = ciphertext.begin();
+        for (i = 1; i <= n; i++, t++)
         {
+            R += 8;
             std::ranges::copy(std::span(R, 8), A.last(8).begin());
             aes.Encrypt(B, B);
             for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8)
@@ -301,27 +302,25 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     n = (ciphertext.size() - 8) >> 3;
 
     // Assign a view over the intermediary buffer
-    std::span<uint8_t> A = B;
+    std::span<std::uint8_t> A = B;
 
     // Assign A to be C[0] (first 64-bit block of the ciphertext)
     std::ranges::copy(ciphertext.first(8), A.begin());
 
-    // Perform the key wrap
+    // Copy the ciphertext (after the integrity octets) into plaintext
     std::ranges::copy(ciphertext.subspan(8), plaintext.begin());
+
+    // Perform the key unwrap
     for (j = 0, t = 6 * n; j < 6; j++)
     {
-        std::span<uint8_t>::iterator R;
-        for (i = n,
-             R = plaintext.begin() +
-                 static_cast<std::span<uint8_t>::difference_type>(
-                     ciphertext.size() - 16);
-             i >= 1;
-             i--, t--, R -= 8)
+        auto R = plaintext.subspan(0, ciphertext.size() - 8).end();
+        for (i = n; i >= 1; i--, t--)
         {
             for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8)
             {
                 A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
             }
+            R -= 8;
             std::ranges::copy(std::span(R, 8), A.last(8).begin());
             aes.Decrypt(B, B);
             std::ranges::copy(A.last(8), R);

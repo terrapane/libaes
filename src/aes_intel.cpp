@@ -249,187 +249,187 @@ void AESIntel::SetKey(const std::span<const std::uint8_t> key)
     SecUtil::SecureErase(DW);
 
     // Create the encryption round keys given the key length (W)
-    switch (key.size())
+    if (key.size() == 16)
     {
-        case 16:
-            Nr = 10;
+        Nr = 10;
 
-            // Fill the first four 32-bit words in the round key array W
-            W[0] =
-                _mm_loadu_si128(reinterpret_cast<const __m128i *>(key.data()));
+        // Define a span over W
+        auto w = std::span(W);
 
+        // Fill the first four 32-bit words in the round key array W
+        w[0] = _mm_loadu_si128(reinterpret_cast<const __m128i *>(key.data()));
+
+        {
+            auto KeyAssist = [&](std::size_t i, __m128i round_key)
             {
-                auto KeyAssist = [&](std::size_t i, __m128i round_key)
-                {
-                    W[i] =
-                        _mm_shuffle_epi32(round_key, _MM_SHUFFLE(3, 3, 3, 3));
-                    T1 = _mm_xor_si128(W[i - 1], _mm_slli_si128(W[i - 1], 4));
-                    T1 = _mm_xor_si128(T1, _mm_slli_si128(T1, 4));
-                    T1 = _mm_xor_si128(T1, _mm_slli_si128(T1, 4));
-                    W[i] = _mm_xor_si128(T1, W[i]);
-                };
+                w[i] = _mm_shuffle_epi32(round_key, _MM_SHUFFLE(3, 3, 3, 3));
+                T1 = _mm_xor_si128(w[i - 1], _mm_slli_si128(w[i - 1], 4));
+                T1 = _mm_xor_si128(T1, _mm_slli_si128(T1, 4));
+                T1 = _mm_xor_si128(T1, _mm_slli_si128(T1, 4));
+                w[i] = _mm_xor_si128(T1, w[i]);
+            };
 
-                // Complete the round key schedule W
-                KeyAssist( 1, _mm_aeskeygenassist_si128(W[0], 0x01));
-                KeyAssist( 2, _mm_aeskeygenassist_si128(W[1], 0x02));
-                KeyAssist( 3, _mm_aeskeygenassist_si128(W[2], 0x04));
-                KeyAssist( 4, _mm_aeskeygenassist_si128(W[3], 0x08));
-                KeyAssist( 5, _mm_aeskeygenassist_si128(W[4], 0x10));
-                KeyAssist( 6, _mm_aeskeygenassist_si128(W[5], 0x20));
-                KeyAssist( 7, _mm_aeskeygenassist_si128(W[6], 0x40));
-                KeyAssist( 8, _mm_aeskeygenassist_si128(W[7], 0x80));
-                KeyAssist( 9, _mm_aeskeygenassist_si128(W[8], 0x1B));
-                KeyAssist(10, _mm_aeskeygenassist_si128(W[9], 0x36));
-            }
+            // Complete the round key schedule W
+            KeyAssist( 1, _mm_aeskeygenassist_si128(w[0], 0x01));
+            KeyAssist( 2, _mm_aeskeygenassist_si128(w[1], 0x02));
+            KeyAssist( 3, _mm_aeskeygenassist_si128(w[2], 0x04));
+            KeyAssist( 4, _mm_aeskeygenassist_si128(w[3], 0x08));
+            KeyAssist( 5, _mm_aeskeygenassist_si128(w[4], 0x10));
+            KeyAssist( 6, _mm_aeskeygenassist_si128(w[5], 0x20));
+            KeyAssist( 7, _mm_aeskeygenassist_si128(w[6], 0x40));
+            KeyAssist( 8, _mm_aeskeygenassist_si128(w[7], 0x80));
+            KeyAssist( 9, _mm_aeskeygenassist_si128(w[8], 0x1B));
+            KeyAssist(10, _mm_aeskeygenassist_si128(w[9], 0x36));
+        }
+    }
+    else if (key.size() == 24)
+    {
+        Nr = 12;
 
-            break;
+        // Define a span over W
+        auto w = std::span(W);
 
-        case 24:
-            Nr = 12;
+        // Fill the first six 32-bit words in the round key array W
+        w[0] = _mm_loadu_si128(reinterpret_cast<const __m128i *>(key.data()));
 
-            // Fill the first six 32-bit words in the round key array W
-            W[0] =
-                _mm_loadu_si128(reinterpret_cast<const __m128i *>(key.data()));
+        // Read 16 more octets, starting at +8 (the high-order bits are part
+        // of what was read in w[0]) to avoid overrun
+        w[1] = _mm_loadu_si128(
+            reinterpret_cast<const __m128i *>(key.subspan(8).data()));
 
-            // Read 16 more octets, starting at +8 (the high-order bits are
-            // part of what was read in W[0]) to avoid overrun
-            W[1] = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(key.subspan(8).data()));
+        // Shift right to remove the octets in W[1] that are part of W[0]
+        w[1] = _mm_srli_si128(w[1], 8);
 
-            // Shift right to remove the octets in W[1] that are part of W[0]
-            W[1] = _mm_srli_si128(W[1], 8);
-
+        {
+            auto KeyAssist = [&](std::size_t i, bool alt, __m128i round_key)
             {
-                auto KeyAssist = [&](std::size_t i, bool alt, __m128i round_key)
+                T3 = _mm_slli_si128(T1, 4);
+                T1 = _mm_xor_si128(T1, T3);
+                T3 = _mm_slli_si128(T3, 4);
+                T1 = _mm_xor_si128(T1, T3);
+                T3 = _mm_slli_si128(T3, 4);
+                T1 = _mm_xor_si128(T1, T3);
+                T1 = _mm_xor_si128(
+                    T1,
+                    _mm_shuffle_epi32(round_key, _MM_SHUFFLE(1, 1, 1, 1)));
+                T4 = _mm_shuffle_epi32(T1, _MM_SHUFFLE(3, 3, 3, 3));
+                T3 = _mm_slli_si128(T2, 4);
+                T2 = _mm_xor_si128(T2, T3);
+                T2 = _mm_xor_si128(T2, T4);
+                if (alt)
                 {
-                    T3 = _mm_slli_si128(T1, 4);
-                    T1 = _mm_xor_si128(T1, T3);
-                    T3 = _mm_slli_si128(T3, 4);
-                    T1 = _mm_xor_si128(T1, T3);
-                    T3 = _mm_slli_si128(T3, 4);
-                    T1 = _mm_xor_si128(T1, T3);
-                    T1 = _mm_xor_si128(
-                        T1,
-                        _mm_shuffle_epi32(round_key, _MM_SHUFFLE(1, 1, 1, 1)));
-                    T4 = _mm_shuffle_epi32(T1, _MM_SHUFFLE(3, 3, 3, 3));
-                    T3 = _mm_slli_si128(T2, 4);
-                    T2 = _mm_xor_si128(T2, T3);
-                    T2 = _mm_xor_si128(T2, T4);
-                    if (alt)
-                    {
-                        W[i] = _mm_or_si128(
-                                    _mm_srli_si128(_mm_slli_si128(W[i], 8), 8),
-                                    _mm_slli_si128(T1, 8));
+                    w[i] =
+                        _mm_or_si128(_mm_srli_si128(_mm_slli_si128(w[i], 8), 8),
+                                     _mm_slli_si128(T1, 8));
 
-                        W[i + 1] = _mm_or_si128(_mm_srli_si128(T1, 8),
-                                                _mm_slli_si128(T2, 8));
-                    }
-                    else
-                    {
-                        W[i] = T1;
-                        if (i < 12) W[i + 1] = T2;
-                    }
-                };
+                    w[i + 1] = _mm_or_si128(_mm_srli_si128(T1, 8),
+                                            _mm_slli_si128(T2, 8));
+                }
+                else
+                {
+                    w[i] = T1;
+                    if (i < 12) w[i + 1] = T2;
+                }
+            };
 
-                // Complete the round key schedule W
-                T1 = W[0];
-                T2 = W[1];
-                KeyAssist( 1, true, _mm_aeskeygenassist_si128(T2, 0x01));
-                KeyAssist( 3, false, _mm_aeskeygenassist_si128(T2, 0x02));
-                KeyAssist( 4, true, _mm_aeskeygenassist_si128(T2, 0x04));
-                KeyAssist( 6, false, _mm_aeskeygenassist_si128(T2, 0x08));
-                KeyAssist( 7, true, _mm_aeskeygenassist_si128(T2, 0x10));
-                KeyAssist( 9, false, _mm_aeskeygenassist_si128(T2, 0x20));
-                KeyAssist(10, true, _mm_aeskeygenassist_si128(T2, 0x40));
-                KeyAssist(12, false, _mm_aeskeygenassist_si128(T2, 0x80));
-            }
+            // Complete the round key schedule W
+            T1 = w[0];
+            T2 = w[1];
+            KeyAssist( 1, true,  _mm_aeskeygenassist_si128(T2, 0x01));
+            KeyAssist( 3, false, _mm_aeskeygenassist_si128(T2, 0x02));
+            KeyAssist( 4, true,  _mm_aeskeygenassist_si128(T2, 0x04));
+            KeyAssist( 6, false, _mm_aeskeygenassist_si128(T2, 0x08));
+            KeyAssist( 7, true,  _mm_aeskeygenassist_si128(T2, 0x10));
+            KeyAssist( 9, false, _mm_aeskeygenassist_si128(T2, 0x20));
+            KeyAssist(10, true,  _mm_aeskeygenassist_si128(T2, 0x40));
+            KeyAssist(12, false, _mm_aeskeygenassist_si128(T2, 0x80));
+        }
+    }
+    else if (key.size() == 32)
+    {
+        Nr = 14;
 
-            break;
+        // Define a span over W
+        auto w = std::span(W);
 
-        case 32:
-            Nr = 14;
+        // Fill the first eight 32-bit words in the round key array W
+        w[0] = _mm_loadu_si128(reinterpret_cast<const __m128i *>(key.data()));
 
-            // Fill the first eight 32-bit words in the round key array W
-            W[0] =
-                _mm_loadu_si128(reinterpret_cast<const __m128i *>(key.data()));
+        // Read 16 more octets, starting at +8 (the high-order bits are part
+        // of what was read in W[0]) to avoid overrun
+        w[1] = _mm_loadu_si128(
+            reinterpret_cast<const __m128i *>(key.subspan(16).data()));
 
-            // Read 16 more octets, starting at +8 (the high-order bits are
-            // part of what was read in W[0]) to avoid overrun
-            W[1] = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(key.subspan(16).data()));
-
+        {
+            auto KeyAssist = [&](std::size_t i, __m128i round_key)
             {
-                auto KeyAssist = [&](std::size_t i, __m128i round_key)
+                T1 = _mm_slli_si128(w[i - 2], 4);
+                T2 = _mm_xor_si128(w[i - 2], T1);
+                T1 = _mm_slli_si128(T1, 4);
+                T2 = _mm_xor_si128(T2, T1);
+                T1 = _mm_slli_si128(T1, 4);
+                T2 = _mm_xor_si128(T2, T1);
+                if ((i & 0x01) != 0)
                 {
-                    T1 = _mm_slli_si128(W[i - 2], 4);
-                    T2 = _mm_xor_si128(W[i - 2], T1);
-                    T1 = _mm_slli_si128(T1, 4);
-                    T2 = _mm_xor_si128(T2, T1);
-                    T1 = _mm_slli_si128(T1, 4);
-                    T2 = _mm_xor_si128(T2, T1);
-                    if ((i & 0x01) != 0)
-                    {
-                        W[i] = _mm_xor_si128(
-                            T2,
-                            _mm_shuffle_epi32(round_key,
-                                              _MM_SHUFFLE(2, 2, 2, 2)));
-                    }
-                    else
-                    {
-                        W[i] = _mm_xor_si128(
-                            T2,
-                            _mm_shuffle_epi32(round_key,
-                                              _MM_SHUFFLE(3, 3, 3, 3)));
-                    }
-                };
+                    w[i] = _mm_xor_si128(
+                        T2,
+                        _mm_shuffle_epi32(round_key, _MM_SHUFFLE(2, 2, 2, 2)));
+                }
+                else
+                {
+                    w[i] = _mm_xor_si128(
+                        T2,
+                        _mm_shuffle_epi32(round_key, _MM_SHUFFLE(3, 3, 3, 3)));
+                }
+            };
 
-                // Complete the round key schedule W
-                KeyAssist( 2, _mm_aeskeygenassist_si128(W[ 1], 0x01));
-                KeyAssist( 3, _mm_aeskeygenassist_si128(W[ 2], 0x00));
-                KeyAssist( 4, _mm_aeskeygenassist_si128(W[ 3], 0x02));
-                KeyAssist( 5, _mm_aeskeygenassist_si128(W[ 4], 0x00));
-                KeyAssist( 6, _mm_aeskeygenassist_si128(W[ 5], 0x04));
-                KeyAssist( 7, _mm_aeskeygenassist_si128(W[ 6], 0x00));
-                KeyAssist( 8, _mm_aeskeygenassist_si128(W[ 7], 0x08));
-                KeyAssist( 9, _mm_aeskeygenassist_si128(W[ 8], 0x00));
-                KeyAssist(10, _mm_aeskeygenassist_si128(W[ 9], 0x10));
-                KeyAssist(11, _mm_aeskeygenassist_si128(W[10], 0x00));
-                KeyAssist(12, _mm_aeskeygenassist_si128(W[11], 0x20));
-                KeyAssist(13, _mm_aeskeygenassist_si128(W[12], 0x00));
-                KeyAssist(14, _mm_aeskeygenassist_si128(W[13], 0x40));
-            }
-
-            break;
-
-        default:
-            throw AESException("Invalid key length provided");
-
-            break;
+            // Complete the round key schedule W
+            KeyAssist( 2, _mm_aeskeygenassist_si128(w[ 1], 0x01));
+            KeyAssist( 3, _mm_aeskeygenassist_si128(w[ 2], 0x00));
+            KeyAssist( 4, _mm_aeskeygenassist_si128(w[ 3], 0x02));
+            KeyAssist( 5, _mm_aeskeygenassist_si128(w[ 4], 0x00));
+            KeyAssist( 6, _mm_aeskeygenassist_si128(w[ 5], 0x04));
+            KeyAssist( 7, _mm_aeskeygenassist_si128(w[ 6], 0x00));
+            KeyAssist( 8, _mm_aeskeygenassist_si128(w[ 7], 0x08));
+            KeyAssist( 9, _mm_aeskeygenassist_si128(w[ 8], 0x00));
+            KeyAssist(10, _mm_aeskeygenassist_si128(w[ 9], 0x10));
+            KeyAssist(11, _mm_aeskeygenassist_si128(w[10], 0x00));
+            KeyAssist(12, _mm_aeskeygenassist_si128(w[11], 0x20));
+            KeyAssist(13, _mm_aeskeygenassist_si128(w[12], 0x00));
+            KeyAssist(14, _mm_aeskeygenassist_si128(w[13], 0x40));
+        }
+    }
+    else
+    {
+        throw AESException("Invalid key length provided");
     }
 
-    // Populate decryption round key array (DW)
-    DW[Nr] = W[0];
-    DW[Nr - 1] = _mm_aesimc_si128(W[1]);
-    DW[Nr - 2] = _mm_aesimc_si128(W[2]);
-    DW[Nr - 3] = _mm_aesimc_si128(W[3]);
-    DW[Nr - 4] = _mm_aesimc_si128(W[4]);
-    DW[Nr - 5] = _mm_aesimc_si128(W[5]);
-    DW[Nr - 6] = _mm_aesimc_si128(W[6]);
-    DW[Nr - 7] = _mm_aesimc_si128(W[7]);
-    DW[Nr - 8] = _mm_aesimc_si128(W[8]);
-    DW[Nr - 9] = _mm_aesimc_si128(W[9]);
+    // Populate decryption round key array (DW)'
+
+    auto dw = std::span(DW);
+
+    dw[Nr] = W[0];
+    dw[Nr - 1] = _mm_aesimc_si128(W[1]);
+    dw[Nr - 2] = _mm_aesimc_si128(W[2]);
+    dw[Nr - 3] = _mm_aesimc_si128(W[3]);
+    dw[Nr - 4] = _mm_aesimc_si128(W[4]);
+    dw[Nr - 5] = _mm_aesimc_si128(W[5]);
+    dw[Nr - 6] = _mm_aesimc_si128(W[6]);
+    dw[Nr - 7] = _mm_aesimc_si128(W[7]);
+    dw[Nr - 8] = _mm_aesimc_si128(W[8]);
+    dw[Nr - 9] = _mm_aesimc_si128(W[9]);
     if (Nr > 10)
     {
-        DW[Nr - 10] = _mm_aesimc_si128(W[10]);
-        DW[Nr - 11] = _mm_aesimc_si128(W[11]);
+        dw[Nr - 10] = _mm_aesimc_si128(W[10]);
+        dw[Nr - 11] = _mm_aesimc_si128(W[11]);
 
         if (Nr > 12)
         {
-            DW[Nr - 12] = _mm_aesimc_si128(W[12]);
-            DW[Nr - 13] = _mm_aesimc_si128(W[13]);
+            dw[Nr - 12] = _mm_aesimc_si128(W[12]);
+            dw[Nr - 13] = _mm_aesimc_si128(W[13]);
         }
     }
-    DW[0] = W[Nr];
+    dw[0] = std::span(W)[Nr];
 }
 
 /*
@@ -514,7 +514,7 @@ void AESIntel::Encrypt(
     }
 
     // Step 3 - Final round
-    T1 = _mm_aesenclast_si128(T1, W[Nr]);
+    T1 = _mm_aesenclast_si128(T1, std::span(W)[Nr]);
 
     // Store the result in the ciphertext buffer
     _mm_storeu_si128(reinterpret_cast<__m128i *>(ciphertext.data()), T1);
@@ -576,7 +576,7 @@ void AESIntel::Decrypt(
     }
 
     // Step 3 - Final round
-    T1 = _mm_aesdeclast_si128(T1, DW[Nr]);
+    T1 = _mm_aesdeclast_si128(T1, std::span(DW)[Nr]);
 
     // Store the result in the ciphertext buffer
     _mm_storeu_si128(reinterpret_cast<__m128i *>(plaintext.data()), T1);
@@ -615,7 +615,7 @@ bool AESIntel::operator==(const AESIntel &other) const
     for (std::size_t i = 0; i < Max_Rounds + 1; i++)
     {
         // XOR the two arrays, so all zeros means they are equal
-        __m128i value = _mm_xor_si128(W[i], other.W[i]);
+        __m128i value = _mm_xor_si128(std::span(W)[i], std::span(other.W)[i]);
 
         // Get the result
         _mm_storeu_si128(reinterpret_cast<__m128i *>(result.data()), value);
@@ -624,7 +624,7 @@ bool AESIntel::operator==(const AESIntel &other) const
         if (result != zeros) return false;
 
         // XOR the two arrays, so all zeros means they are equal
-        value = _mm_xor_si128(DW[i], other.DW[i]);
+        value = _mm_xor_si128(std::span(DW)[i], std::span(other.DW)[i]);
 
         // Get the result
         _mm_storeu_si128(reinterpret_cast<__m128i *>(result.data()), value);

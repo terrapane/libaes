@@ -243,13 +243,17 @@ AESUniversal &AESUniversal::operator=(AESUniversal &&other) noexcept
  *      one of 16, 24, or 32 octets in length as required by the standard.
  *
  *  Comments:
- *      None.
+ *      Code uses std::span over array to get the benefit of bounds checking
+ *      with debug builds.
  */
 void AESUniversal::SetKey(const std::span<const std::uint8_t> key)
 {
     // Zero the key schedule
     SecUtil::SecureErase(W);
     SecUtil::SecureErase(DW);
+
+    // Define a span over rCon
+    auto r = std::span(Rcon);
 
     // Create the encryption round keys given the key length (W)
     switch (key.size())
@@ -258,19 +262,24 @@ void AESUniversal::SetKey(const std::span<const std::uint8_t> key)
             Nr = 10;
             Nk = 4;
 
-            // Fill the first Nk 32-bit words in the round key array W
-            W[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
-            W[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
-            W[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
-            W[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
-
-            // Fill the remaining word in the round key array W
-            for (std::size_t i = Nk, j = 0; i <= 40; i += Nk, j++)
             {
-                W[i + 0] = W[i - 4] ^ SubBytes(RotWord(W[i - 1])) ^ Rcon[j];
-                W[i + 1] = W[i - 3] ^ W[i + 0];
-                W[i + 2] = W[i - 2] ^ W[i + 1];
-                W[i + 3] = W[i - 1] ^ W[i + 2];
+                // Define a span over W
+                auto w = std::span(W);
+
+                // Fill the first Nk 32-bit words in the round key array W
+                w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
+                w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
+                w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
+                w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
+
+                // Fill the remaining word in the round key array W
+                for (std::size_t i = Nk, j = 0; i <= 40; i += Nk, j++)
+                {
+                    w[i + 0] = w[i - 4] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
+                    w[i + 1] = w[i - 3] ^ w[i + 0];
+                    w[i + 2] = w[i - 2] ^ w[i + 1];
+                    w[i + 3] = w[i - 1] ^ w[i + 2];
+                }
             }
 
             break;
@@ -279,28 +288,33 @@ void AESUniversal::SetKey(const std::span<const std::uint8_t> key)
             Nr = 12;
             Nk = 6;
 
-            // Fill the first Nk words in the round key array W
-            W[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
-            W[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
-            W[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
-            W[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
-            W[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
-            W[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
-
-            // Fill the remaining word in the round key array W
-            for (std::size_t i = Nk, j = 0; i <= 42; i += Nk, j++)
             {
-                W[i + 0] = W[i - 6] ^ SubBytes(RotWord(W[i - 1])) ^ Rcon[j];
-                W[i + 1] = W[i - 5] ^ W[i + 0];
-                W[i + 2] = W[i - 4] ^ W[i + 1];
-                W[i + 3] = W[i - 3] ^ W[i + 2];
-                W[i + 4] = W[i - 2] ^ W[i + 3];
-                W[i + 5] = W[i - 1] ^ W[i + 4];
+                // Define a span over W
+                auto w = std::span(W);
+
+                // Fill the first Nk words in the round key array W
+                w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
+                w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
+                w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
+                w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
+                w[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
+                w[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
+
+                // Fill the remaining word in the round key array W
+                for (std::size_t i = Nk, j = 0; i <= 42; i += Nk, j++)
+                {
+                    w[i + 0] = w[i - 6] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
+                    w[i + 1] = w[i - 5] ^ w[i + 0];
+                    w[i + 2] = w[i - 4] ^ w[i + 1];
+                    w[i + 3] = w[i - 3] ^ w[i + 2];
+                    w[i + 4] = w[i - 2] ^ w[i + 3];
+                    w[i + 5] = w[i - 1] ^ w[i + 4];
+                }
+                w[48] = w[42] ^ SubBytes(RotWord(w[47])) ^ r[7];
+                w[49] = w[43] ^ w[48];
+                w[50] = w[44] ^ w[49];
+                w[51] = w[45] ^ w[50];
             }
-            W[48] = W[42] ^ SubBytes(RotWord(W[47])) ^ Rcon[7];
-            W[49] = W[43] ^ W[48];
-            W[50] = W[44] ^ W[49];
-            W[51] = W[45] ^ W[50];
 
             break;
 
@@ -308,32 +322,37 @@ void AESUniversal::SetKey(const std::span<const std::uint8_t> key)
             Nr = 14;
             Nk = 8;
 
-            // Fill the first Nk words in the round key array W
-            W[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
-            W[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
-            W[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
-            W[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
-            W[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
-            W[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
-            W[6] = GetWordFromBuffer<std::uint_fast32_t>(key, 6);
-            W[7] = GetWordFromBuffer<std::uint_fast32_t>(key, 7);
-
-            // Fill the remaining word in the round key array W
-            for (std::size_t i = Nk, j = 0; i <= 48; i += Nk, j++)
             {
-                W[i + 0] = W[i - 8] ^ SubBytes(RotWord(W[i - 1])) ^ Rcon[j];
-                W[i + 1] = W[i - 7] ^ W[i + 0];
-                W[i + 2] = W[i - 6] ^ W[i + 1];
-                W[i + 3] = W[i - 5] ^ W[i + 2];
-                W[i + 4] = W[i - 4] ^ SubBytes(W[i + 3]);
-                W[i + 5] = W[i - 3] ^ W[i + 4];
-                W[i + 6] = W[i - 2] ^ W[i + 5];
-                W[i + 7] = W[i - 1] ^ W[i + 6];
+                // Define a span over W
+                auto w = std::span(W);
+
+                // Fill the first Nk words in the round key array W
+                w[0] = GetWordFromBuffer<std::uint_fast32_t>(key, 0);
+                w[1] = GetWordFromBuffer<std::uint_fast32_t>(key, 1);
+                w[2] = GetWordFromBuffer<std::uint_fast32_t>(key, 2);
+                w[3] = GetWordFromBuffer<std::uint_fast32_t>(key, 3);
+                w[4] = GetWordFromBuffer<std::uint_fast32_t>(key, 4);
+                w[5] = GetWordFromBuffer<std::uint_fast32_t>(key, 5);
+                w[6] = GetWordFromBuffer<std::uint_fast32_t>(key, 6);
+                w[7] = GetWordFromBuffer<std::uint_fast32_t>(key, 7);
+
+                // Fill the remaining word in the round key array W
+                for (std::size_t i = Nk, j = 0; i <= 48; i += Nk, j++)
+                {
+                    w[i + 0] = w[i - 8] ^ SubBytes(RotWord(w[i - 1])) ^ r[j];
+                    w[i + 1] = w[i - 7] ^ w[i + 0];
+                    w[i + 2] = w[i - 6] ^ w[i + 1];
+                    w[i + 3] = w[i - 5] ^ w[i + 2];
+                    w[i + 4] = w[i - 4] ^ SubBytes(w[i + 3]);
+                    w[i + 5] = w[i - 3] ^ w[i + 4];
+                    w[i + 6] = w[i - 2] ^ w[i + 5];
+                    w[i + 7] = w[i - 1] ^ w[i + 6];
+                }
+                w[56] = w[48] ^ SubBytes(RotWord(w[55])) ^ r[6];
+                w[57] = w[49] ^ w[56];
+                w[58] = w[50] ^ w[57];
+                w[59] = w[51] ^ w[58];
             }
-            W[56] = W[48] ^ SubBytes(RotWord(W[55])) ^ Rcon[6];
-            W[57] = W[49] ^ W[56];
-            W[58] = W[50] ^ W[57];
-            W[59] = W[51] ^ W[58];
 
             break;
 
@@ -344,28 +363,31 @@ void AESUniversal::SetKey(const std::span<const std::uint8_t> key)
     }
 
     // Populate decryption round key array (DW)
-    for (std::uint_fast32_t *dw = DW.data(),
-                            *w = W.data() + (Nr * Nb),
-                            *lower_bound = DW.data() + Nb,
-                            *upper_bound = DW.data() + ((Nr - 1) * Nb);
-         w >= W.data();
-         dw += Nb, w -= Nb)
+    auto dw = std::span(DW).begin();
+    auto w = std::span(W).subspan(0, ((Nr + 1) * Nb)).end() - Nb;
+
+    // Assign the first Nb values
+    dw[0] = w[0];
+    dw[1] = w[1];
+    dw[2] = w[2];
+    dw[3] = w[3];
+    dw += Nb;
+    w -= Nb;
+
+    // Assign all of the intermediate values
+    for (std::size_t i = 0; i < (Nr - 1); i++, dw += Nb, w -= Nb)
     {
-        if ((dw >= lower_bound) && (dw <= upper_bound))
-        {
-            dw[0] = FastInvMixColumn(w[0]);
-            dw[1] = FastInvMixColumn(w[1]);
-            dw[2] = FastInvMixColumn(w[2]);
-            dw[3] = FastInvMixColumn(w[3]);
-        }
-        else
-        {
-            dw[0] = w[0];
-            dw[1] = w[1];
-            dw[2] = w[2];
-            dw[3] = w[3];
-        }
+        dw[0] = FastInvMixColumn(w[0]);
+        dw[1] = FastInvMixColumn(w[1]);
+        dw[2] = FastInvMixColumn(w[2]);
+        dw[3] = FastInvMixColumn(w[3]);
     }
+
+    // Assign the final Nb values
+    dw[0] = w[0];
+    dw[1] = w[1];
+    dw[2] = w[2];
+    dw[3] = w[3];
 }
 
 /*
@@ -528,20 +550,24 @@ void AESUniversal::Encrypt(
     //     While this is a bit verbose, there is no need to store these results
     //     back into the state array, as the result can be placed directly
     //     into the ciphertext buffer
+
+    // Define a span over W (for the benefit of bounds checking)
+    auto w = std::span(W);
+
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(0, alt_state), W[(Nr << 2) + 0]),
+        AddRoundKey(SubBytesShiftRows(0, alt_state), w[(Nr << 2) + 0]),
         0,
         ciphertext);
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(1, alt_state), W[(Nr << 2) + 1]),
+        AddRoundKey(SubBytesShiftRows(1, alt_state), w[(Nr << 2) + 1]),
         1,
         ciphertext);
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(2, alt_state), W[(Nr << 2) + 2]),
+        AddRoundKey(SubBytesShiftRows(2, alt_state), w[(Nr << 2) + 2]),
         2,
         ciphertext);
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(3, alt_state), W[(Nr << 2) + 3]),
+        AddRoundKey(SubBytesShiftRows(3, alt_state), w[(Nr << 2) + 3]),
         3,
         ciphertext);
 }
@@ -681,20 +707,24 @@ void AESUniversal::Decrypt(
     //     While this is a bit verbose, there is no need to store these results
     //     back into the state array, as the result can be placed directly
     //     into the plaintext buffer
+
+    // Define a span over DW (for the benefit of bounds checking)
+    auto dw = std::span(DW);
+
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(0, alt_state), DW[(Nr << 2) + 0]),
+        AddRoundKey(InvSubBytesShiftRows(0, alt_state), dw[(Nr << 2) + 0]),
         0,
         plaintext);
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(1, alt_state), DW[(Nr << 2) + 1]),
+        AddRoundKey(InvSubBytesShiftRows(1, alt_state), dw[(Nr << 2) + 1]),
         1,
         plaintext);
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(2, alt_state), DW[(Nr << 2) + 2]),
+        AddRoundKey(InvSubBytesShiftRows(2, alt_state), dw[(Nr << 2) + 2]),
         2,
         plaintext);
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(3, alt_state), DW[(Nr << 2) + 3]),
+        AddRoundKey(InvSubBytesShiftRows(3, alt_state), dw[(Nr << 2) + 3]),
         3,
         plaintext);
 }

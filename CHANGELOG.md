@@ -2,6 +2,7 @@
 
 v1.1.5
 
+- Updated dependencies
 - Replaced std::copy with std::ranges::copy, etc.
 - Switched Intel AES code to use SecureArray
 - Removed pointers from AES KW and added more tests

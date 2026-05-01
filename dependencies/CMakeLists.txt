@@ -31,7 +31,7 @@ FetchContent_Declare(secutil
 # Fetch and make available bit-oriented utility functions
 FetchContent_Declare(bitutil
     GIT_REPOSITORY ${TERRAPANE_SOURCE_URI}/bitutil.git
-    GIT_TAG        v1.0.5
+    GIT_TAG        v1.0.6
     GIT_SHALLOW    true)
 
 # If not installing libaes, turn off installation for dependencies

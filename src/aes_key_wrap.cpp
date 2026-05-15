@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
+#include <ranges>
 #include <span>
 #include <terra/crypto/cipher/aes_key_wrap.h>
 #include <terra/crypto/cipher/aes.h>
@@ -50,7 +51,6 @@ namespace Terra::Crypto::Cipher::AES
  *      None.
  */
 AESKeyWrap::AESKeyWrap() :
-    aes(),
     i{},
     j{},
     k{},
@@ -195,7 +195,7 @@ void AESKeyWrap::Wrap(std::span<const std::uint8_t> plaintext,
                       std::span<const std::uint8_t> alternative_iv)
 {
     // Ensure buffers appear sane ("& 0x07" performs a mod 8 check)
-    if ((plaintext.size() < 16) || ((plaintext.size() & 0x07) != 0) ||
+    if ((plaintext.size() < 16) || ((plaintext.size() & 0x07U) != 0) ||
         (ciphertext.size() != (plaintext.size() + 8)) ||
         (!alternative_iv.empty() && (alternative_iv.size() != 8)))
     {
@@ -203,7 +203,7 @@ void AESKeyWrap::Wrap(std::span<const std::uint8_t> plaintext,
     }
 
     // Determine the number of 64-bit blocks to process
-    n = (plaintext.size() >> 3);
+    n = (plaintext.size() >> 3U);
 
     // Assign a view over the intermediary buffer
     const std::span<uint8_t> A = B;
@@ -228,11 +228,11 @@ void AESKeyWrap::Wrap(std::span<const std::uint8_t> plaintext,
         for (i = 1; i <= n; i++, t++)
         {
             R += 8;
-            std::ranges::copy(std::span(R, 8), A.last(8).begin());
+            std::ranges::copy(std::views::counted(R, 8), A.last(8).begin());
             aes.Encrypt(B, B);
-            for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8)
+            for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8U)
             {
-                A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
+                A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xffU);
             }
             std::ranges::copy(A.last(8), R);
         }
@@ -295,7 +295,7 @@ bool AESKeyWrap::Unwrap(std::span<const std::uint8_t> ciphertext,
                         std::span<const std::uint8_t> alternative_iv)
 {
     // Ensure buffers appear sane ("& 0x07" performs a mod 8 check)
-    if ((ciphertext.size() < 24) || ((ciphertext.size() & 0x07) != 0) ||
+    if ((ciphertext.size() < 24) || ((ciphertext.size() & 0x07U) != 0) ||
         (plaintext.size() != (ciphertext.size() - 8)) ||
         (!integrity.empty() && (integrity.size() != 8)) ||
         (!alternative_iv.empty() && (alternative_iv.size() != 8)))
@@ -304,7 +304,7 @@ bool AESKeyWrap::Unwrap(std::span<const std::uint8_t> ciphertext,
     }
 
     // Determine the number of 64-bit blocks to process
-    n = (ciphertext.size() - 8) >> 3;
+    n = (ciphertext.size() - 8) >> 3U;
 
     // Assign a view over the intermediary buffer
     const std::span<std::uint8_t> A = B;
@@ -321,12 +321,12 @@ bool AESKeyWrap::Unwrap(std::span<const std::uint8_t> ciphertext,
         auto R = plaintext.subspan(0, ciphertext.size() - 8).end();
         for (i = n; i >= 1; i--, t--)
         {
-            for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8)
+            for (k = 8, tt = t; (k > 0) && (tt > 0); k--, tt >>= 8U)
             {
-                A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xff);
+                A[k - 1] ^= static_cast<std::uint8_t>(tt & 0xffU);
             }
             R -= 8;
-            std::ranges::copy(std::span(R, 8), A.last(8).begin());
+            std::ranges::copy(std::views::counted(R, 8), A.last(8).begin());
             aes.Decrypt(B, B);
             std::ranges::copy(A.last(8), R);
         }
@@ -410,9 +410,9 @@ std::size_t AESKeyWrap::WrapWithPadding(
     }
 
     // Compute padding to be an even 8 octets (note: "& 0x07" == "% 8")
-    if ((plaintext.size() & 0x07) != 0)
+    if ((plaintext.size() & 0x07U) != 0)
     {
-        padding_length = 8 - (plaintext.size() & 0x07);
+        padding_length = 8 - (plaintext.size() & 0x07U);
     }
     else
     {
@@ -510,7 +510,7 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
                             std::span<const std::uint8_t> alternative_iv)
 {
     // Ensure buffers appear sane ("& 0x07" performs a mod 8 check)
-    if ((ciphertext.size() < 16) || ((ciphertext.size() & 0x07) != 0) ||
+    if ((ciphertext.size() < 16) || ((ciphertext.size() & 0x07U) != 0) ||
         (plaintext.size() < (ciphertext.size() - 8)) ||
         (!alternative_iv.empty() && (alternative_iv.size() != 4)))
     {

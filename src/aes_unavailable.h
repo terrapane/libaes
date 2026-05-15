@@ -34,11 +34,11 @@ class AESUnavailable : public AESEngine
 {
     public:
         AESUnavailable() = default;
-        AESUnavailable(const AESUnavailable &) = delete;
+        AESUnavailable(const AESUnavailable &) = default;
         AESUnavailable(AESUnavailable &&)  = default;
         ~AESUnavailable() override = default;
 
-        AESUnavailable &operator=(const AESUnavailable &) = delete;
+        AESUnavailable &operator=(const AESUnavailable &) = default;
         AESUnavailable &operator=(AESUnavailable &&) = default;
 
         AESEngineType GetEngineType() const noexcept override

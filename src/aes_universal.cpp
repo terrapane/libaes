@@ -60,7 +60,6 @@ namespace Terra::Crypto::Cipher::AES
  *      None.
  */
 AESUniversal::AESUniversal() noexcept :
-    AESEngine(),
     Nr{},
     Nk{},
     state{},
@@ -541,19 +540,19 @@ void AESUniversal::Encrypt(
     auto w = std::span(W);
 
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(0, alt_state), w[(Nr << 2) + 0]),
+        AddRoundKey(SubBytesShiftRows(0, alt_state), w[(Nr << 2U) + 0]),
         0,
         ciphertext);
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(1, alt_state), w[(Nr << 2) + 1]),
+        AddRoundKey(SubBytesShiftRows(1, alt_state), w[(Nr << 2U) + 1]),
         1,
         ciphertext);
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(2, alt_state), w[(Nr << 2) + 2]),
+        AddRoundKey(SubBytesShiftRows(2, alt_state), w[(Nr << 2U) + 2]),
         2,
         ciphertext);
     PutStateColumn(
-        AddRoundKey(SubBytesShiftRows(3, alt_state), w[(Nr << 2) + 3]),
+        AddRoundKey(SubBytesShiftRows(3, alt_state), w[(Nr << 2U) + 3]),
         3,
         ciphertext);
 }
@@ -694,19 +693,19 @@ void AESUniversal::Decrypt(
     auto dw = std::span(DW);
 
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(0, alt_state), dw[(Nr << 2) + 0]),
+        AddRoundKey(InvSubBytesShiftRows(0, alt_state), dw[(Nr << 2U) + 0]),
         0,
         plaintext);
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(1, alt_state), dw[(Nr << 2) + 1]),
+        AddRoundKey(InvSubBytesShiftRows(1, alt_state), dw[(Nr << 2U) + 1]),
         1,
         plaintext);
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(2, alt_state), dw[(Nr << 2) + 2]),
+        AddRoundKey(InvSubBytesShiftRows(2, alt_state), dw[(Nr << 2U) + 2]),
         2,
         plaintext);
     PutStateColumn(
-        AddRoundKey(InvSubBytesShiftRows(3, alt_state), dw[(Nr << 2) + 3]),
+        AddRoundKey(InvSubBytesShiftRows(3, alt_state), dw[(Nr << 2U) + 3]),
         3,
         plaintext);
 }

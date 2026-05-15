@@ -56,7 +56,6 @@ namespace Terra::Crypto::Cipher::AES
  *      None.
  */
 AESIntel::AESIntel() noexcept :
-    AESEngine(),
     Nr{},
     W{},
     DW{},
@@ -371,7 +370,7 @@ void AESIntel::SetKey(std::span<const std::uint8_t> key)
                 T2 = _mm_xor_si128(T2, T1);
                 T1 = _mm_slli_si128(T1, 4);
                 T2 = _mm_xor_si128(T2, T1);
-                if ((i & 0x01) != 0)
+                if ((i & 1U) != 0)
                 {
                     w[i] = _mm_xor_si128(
                         T2,

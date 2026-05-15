@@ -54,10 +54,10 @@ namespace Terra::Crypto::Cipher::AES
 constexpr AESInt32 GetWordFromBuffer(std::span<const std::uint8_t> buffer,
                                      const std::size_t offset)
 {
-    return static_cast<AESInt32>(buffer[(offset << 2)    ]) << 24 |
-           static_cast<AESInt32>(buffer[(offset << 2) + 1]) << 16 |
-           static_cast<AESInt32>(buffer[(offset << 2) + 2]) <<  8 |
-           static_cast<AESInt32>(buffer[(offset << 2) + 3]);
+    return static_cast<AESInt32>(buffer[(offset << 2U)    ]) << 24U |
+           static_cast<AESInt32>(buffer[(offset << 2U) + 1]) << 16U |
+           static_cast<AESInt32>(buffer[(offset << 2U) + 2]) <<  8U |
+           static_cast<AESInt32>(buffer[(offset << 2U) + 3]);
 }
 
 /*
@@ -91,10 +91,10 @@ constexpr void PutStateColumn(const AESInt32 value,
                               const std::size_t column,
                               std::span<std::uint8_t, 16> ciphertext)
 {
-    ciphertext[(column << 2)    ] = (value >> 24) & 0xff;
-    ciphertext[(column << 2) + 1] = (value >> 16) & 0xff;
-    ciphertext[(column << 2) + 2] = (value >>  8) & 0xff;
-    ciphertext[(column << 2) + 3] = (value      ) & 0xff;
+    ciphertext[(column << 2U)    ] = (value >> 24U) & 0xffU;
+    ciphertext[(column << 2U) + 1] = (value >> 16U) & 0xffU;
+    ciphertext[(column << 2U) + 2] = (value >>  8U) & 0xffU;
+    ciphertext[(column << 2U) + 3] = (value       ) & 0xffU;
 }
 
 /*
@@ -139,10 +139,11 @@ constexpr AESInt32 RotWord(const AESInt32 word)
  */
 constexpr AESInt32 SubBytes(const AESInt32 value)
 {
-    return static_cast<AESInt32>(std::span(Sbox)[(value >> 24) & 0xff]) << 24 |
-           static_cast<AESInt32>(std::span(Sbox)[(value >> 16) & 0xff]) << 16 |
-           static_cast<AESInt32>(std::span(Sbox)[(value >>  8) & 0xff]) <<  8 |
-           static_cast<AESInt32>(std::span(Sbox)[(value      ) & 0xff]);
+    return static_cast<AESInt32>(
+        static_cast<AESInt32>(std::span(Sbox)[(value >> 24U) & 0xffU]) << 24U |
+        static_cast<AESInt32>(std::span(Sbox)[(value >> 16U) & 0xffU]) << 16U |
+        static_cast<AESInt32>(std::span(Sbox)[(value >>  8U) & 0xffU]) <<  8U |
+        static_cast<AESInt32>(std::span(Sbox)[(value       ) & 0xffU]));
 }
 
 /*
@@ -170,15 +171,16 @@ constexpr AESInt32 SubBytes(const AESInt32 value)
 constexpr AESInt32 SubBytesShiftRows(std::size_t column,
                                      std::span<const AESInt32, 4> state)
 {
-    return
-        static_cast<AESInt32>(
-            std::span(Sbox)[(state[(0 + column) % 4] >> 24) & 0xff]) << 24 |
-        static_cast<AESInt32>(
-            std::span(Sbox)[(state[(1 + column) % 4] >> 16) & 0xff]) << 16 |
-        static_cast<AESInt32>(
-            std::span(Sbox)[(state[(2 + column) % 4] >>  8) & 0xff]) <<  8 |
-        static_cast<AESInt32>(
-            std::span(Sbox)[(state[(3 + column) % 4]      ) & 0xff]);
+    const AESInt32 octet1 =
+            std::span(Sbox)[(state[(0 + column) % 4] >> 24U) & 0xffU] << 24U;
+    const AESInt32 octet2 =
+            std::span(Sbox)[(state[(1 + column) % 4] >> 16U) & 0xffU] << 16U;
+    const AESInt32 octet3 =
+            std::span(Sbox)[(state[(2 + column) % 4] >>  8U) & 0xffU] <<  8U;
+    const AESInt32 octet4 =
+            std::span(Sbox)[(state[(3 + column) % 4]      ) & 0xffU];
+
+    return octet1 | octet2 | octet3 | octet4;
 }
 
 /*
@@ -206,14 +208,16 @@ constexpr AESInt32 SubBytesShiftRows(std::size_t column,
 constexpr AESInt32 InvSubBytesShiftRows(std::size_t column,
                                         std::span<const AESInt32, 4> state)
 {
-    return static_cast<AESInt32>(
-        std::span(InverseSbox)[(state[(0 + column) % 4] >> 24) & 0xff]) << 24 |
-           static_cast<AESInt32>(
-        std::span(InverseSbox)[(state[(3 + column) % 4] >> 16) & 0xff]) << 16 |
-           static_cast<AESInt32>(
-        std::span(InverseSbox)[(state[(2 + column) % 4] >>  8) & 0xff]) <<  8 |
-           static_cast<AESInt32>(
-        std::span(InverseSbox)[(state[(1 + column) % 4]      ) & 0xff]);
+    const AESInt32 octet1 =
+        std::span(InverseSbox)[(state[(0 + column) % 4] >> 24U) & 0xffU] << 24U;
+    const AESInt32 octet2 =
+        std::span(InverseSbox)[(state[(3 + column) % 4] >> 16U) & 0xffU] << 16U;
+    const AESInt32 octet3 =
+        std::span(InverseSbox)[(state[(2 + column) % 4] >>  8U) & 0xffU] <<  8U;
+    const AESInt32 octet4 =
+        std::span(InverseSbox)[(state[(1 + column) % 4]) & 0xffU];
+
+    return octet1 | octet2 | octet3 | octet4;
 }
 
 /*
@@ -264,10 +268,10 @@ constexpr AESInt32 MixColShiftRow(const std::size_t column,
                                   std::span<const AESInt32, 4> state)
 {
     return static_cast<AESInt32>(
-        std::span(Enc0)[(state[(0 + column) % 4] >> 24) & 0xff] ^
-        std::span(Enc1)[(state[(1 + column) % 4] >> 16) & 0xff] ^
-        std::span(Enc2)[(state[(2 + column) % 4] >>  8) & 0xff] ^
-        std::span(Enc3)[(state[(3 + column) % 4]      ) & 0xff]);
+        std::span(Enc0)[(state[(0 + column) % 4] >> 24U) & 0xffU] ^
+        std::span(Enc1)[(state[(1 + column) % 4] >> 16U) & 0xffU] ^
+        std::span(Enc2)[(state[(2 + column) % 4] >>  8U) & 0xffU] ^
+        std::span(Enc3)[(state[(3 + column) % 4]       ) & 0xffU]);
 }
 
 /*
@@ -304,10 +308,10 @@ constexpr AESInt32 MixColShiftRow(const std::size_t column,
 constexpr AESInt32 FastInvMixColumn(const AESInt32 value)
 {
     return static_cast<AESInt32>(
-        std::span(Dec0)[std::span(Sbox)[(value >> 24) & 0xff]] ^
-        std::span(Dec1)[std::span(Sbox)[(value >> 16) & 0xff]] ^
-        std::span(Dec2)[std::span(Sbox)[(value >>  8) & 0xff]] ^
-        std::span(Dec3)[std::span(Sbox)[(value      ) & 0xff]]);
+        std::span(Dec0)[std::span(Sbox)[(value >> 24U) & 0xffU]] ^
+        std::span(Dec1)[std::span(Sbox)[(value >> 16U) & 0xffU]] ^
+        std::span(Dec2)[std::span(Sbox)[(value >>  8U) & 0xffU]] ^
+        std::span(Dec3)[std::span(Sbox)[(value       ) & 0xffU]]);
 }
 
 /*
@@ -336,10 +340,10 @@ constexpr AESInt32 InvMixColShiftRow(const std::size_t column,
                                      std::span<const AESInt32, 4> state)
 {
     return static_cast<AESInt32>(
-        std::span(Dec0)[(state[(0 + column) % 4] >> 24) & 0xff] ^
-        std::span(Dec1)[(state[(3 + column) % 4] >> 16) & 0xff] ^
-        std::span(Dec2)[(state[(2 + column) % 4] >>  8) & 0xff] ^
-        std::span(Dec3)[(state[(1 + column) % 4]      ) & 0xff]);
+        std::span(Dec0)[(state[(0 + column) % 4] >> 24U) & 0xffU] ^
+        std::span(Dec1)[(state[(3 + column) % 4] >> 16U) & 0xffU] ^
+        std::span(Dec2)[(state[(2 + column) % 4] >>  8U) & 0xffU] ^
+        std::span(Dec3)[(state[(1 + column) % 4]       ) & 0xffU]);
 }
 
 } // namespace Terra::Crypto::Cipher::AES

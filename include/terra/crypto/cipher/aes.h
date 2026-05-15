@@ -48,11 +48,11 @@ class AESEngine
 {
     public:
         AESEngine() = default;
-        AESEngine(const AESEngine &) = delete;
+        AESEngine(const AESEngine &) = default;
         AESEngine(AESEngine &&) = default;
         virtual ~AESEngine() = default;
 
-        AESEngine &operator=(const AESEngine &) = delete;
+        AESEngine &operator=(const AESEngine &) = default;
         AESEngine &operator=(AESEngine &&) = default;
 
         virtual AESEngineType GetEngineType() const noexcept = 0;

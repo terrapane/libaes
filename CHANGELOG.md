@@ -27,8 +27,8 @@ v1.1.2
 
 v1.1.1
 
-- Made #ifdef statements more generic to build on any Unix-like system
-- Modified how libaes determines if the __cpuid() function exists
+- Made `#ifdef` statements more generic to build on any Unix-like system
+- Modified how libaes determines if the `__cpuid()` function exists
 
 v1.1.0
 
@@ -63,7 +63,7 @@ v1.0.3
 v1.0.2
 
 - Changes to CMake related to use of Intel Intrinsics
-- Changes to #ifdef statements to check for AES-NI support
+- Changes to `#ifdef` statements to check for AES-NI support
 - Updated library dependencies
 
 v1.0.1

@@ -1,7 +1,7 @@
 /*
  *  cpu_check.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -18,9 +18,9 @@
 
 #pragma once
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 bool CPUSupportsAES_NI();
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

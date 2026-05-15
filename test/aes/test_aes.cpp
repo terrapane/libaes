@@ -1,7 +1,7 @@
 /*
  *  test_aes.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -25,7 +25,7 @@
 #include <terra/stf/adapters/integral_array.h>
 #include <terra/stf/stf.h>
 
-using namespace Terra::Crypto::Cipher;
+using namespace Terra::Crypto::Cipher::AES;
 
 // Test from Appendix B
 STF_TEST(AES, TestVectorBEncrypt128)

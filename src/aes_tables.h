@@ -1,7 +1,7 @@
 /*
  *  aes_tables.h
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -23,12 +23,13 @@
 
 #include <cstdint>
 #include <array>
+#include "aes_definitions.h"
 
-namespace
+namespace Terra::Crypto::Cipher::AES
 {
 
 // S-box substitution table defined in Section 5.1.1 of FIPS 197
-constexpr std::array<std::uint8_t, 256> Sbox =
+inline constexpr std::array<std::uint8_t, 256> Sbox =
 {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
     0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -65,7 +66,7 @@ constexpr std::array<std::uint8_t, 256> Sbox =
 };
 
 // Inverse S-box substitution table defined in Section 5.3.2 of FIPS 197
-constexpr std::array<std::uint8_t, 256> InverseSbox =
+inline constexpr std::array<std::uint8_t, 256> InverseSbox =
 {
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
     0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
@@ -109,7 +110,7 @@ constexpr std::array<std::uint8_t, 256> InverseSbox =
 //         128 bits - 10 elements consumed
 //         192 bits - 8 elements consumed
 //         256 bits - 7 elements consumed
-constexpr std::array<std::uint32_t, 10> Rcon =
+inline constexpr std::array<AESInt32, 10> Rcon =
 {
     0x01000000, 0x02000000, 0x04000000, 0x08000000,
     0x10000000, 0x20000000, 0x40000000, 0x80000000,
@@ -117,7 +118,7 @@ constexpr std::array<std::uint32_t, 10> Rcon =
 };
 
 // Encrypting Constants Table 0 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Enc0 =
+inline constexpr std::array<AESInt32, 256> Enc0 =
 {
     0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d,
     0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554,
@@ -186,7 +187,7 @@ constexpr std::array<std::uint32_t, 256> Enc0 =
 };
 
 // Encrypting Constants Table 1 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Enc1 =
+inline constexpr std::array<AESInt32, 256> Enc1 =
 {
     0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b,
     0x0dfff2f2, 0xbdd66b6b, 0xb1de6f6f, 0x5491c5c5,
@@ -255,7 +256,7 @@ constexpr std::array<std::uint32_t, 256> Enc1 =
 };
 
 // Encrypting Constants Table 2 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Enc2 =
+inline constexpr std::array<AESInt32, 256> Enc2 =
 {
     0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b,
     0xf20dfff2, 0x6bbdd66b, 0x6fb1de6f, 0xc55491c5,
@@ -324,7 +325,7 @@ constexpr std::array<std::uint32_t, 256> Enc2 =
 };
 
 // Encrypting Constants Table 3 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Enc3 =
+inline constexpr std::array<AESInt32, 256> Enc3 =
 {
     0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6,
     0xf2f20dff, 0x6b6bbdd6, 0x6f6fb1de, 0xc5c55491,
@@ -393,7 +394,7 @@ constexpr std::array<std::uint32_t, 256> Enc3 =
 };
 
 // Decrypting Constants Table 0 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Dec0 =
+inline constexpr std::array<AESInt32, 256> Dec0 =
 {
     0x51f4a750, 0x7e416553, 0x1a17a4c3, 0x3a275e96,
     0x3bab6bcb, 0x1f9d45f1, 0xacfa58ab, 0x4be30393,
@@ -462,7 +463,7 @@ constexpr std::array<std::uint32_t, 256> Dec0 =
 };
 
 // Decrypting Constants Table 1 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Dec1 =
+inline constexpr std::array<AESInt32, 256> Dec1 =
 {
     0x5051f4a7, 0x537e4165, 0xc31a17a4, 0x963a275e,
     0xcb3bab6b, 0xf11f9d45, 0xabacfa58, 0x934be303,
@@ -531,7 +532,7 @@ constexpr std::array<std::uint32_t, 256> Dec1 =
 };
 
 // Decrypting Constants Table 2 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Dec2 =
+inline constexpr std::array<AESInt32, 256> Dec2 =
 {
     0xa75051f4, 0x65537e41, 0xa4c31a17, 0x5e963a27,
     0x6bcb3bab, 0x45f11f9d, 0x58abacfa, 0x03934be3,
@@ -600,7 +601,7 @@ constexpr std::array<std::uint32_t, 256> Dec2 =
 };
 
 // Decrypting Constants Table 3 (see README.md for an explanation)
-constexpr std::array<std::uint32_t, 256> Dec3 =
+inline constexpr std::array<AESInt32, 256> Dec3 =
 {
     0xf4a75051, 0x4165537e, 0x17a4c31a, 0x275e963a,
     0xab6bcb3b, 0x9d45f11f, 0xfa58abac, 0xe303934b,
@@ -668,4 +669,4 @@ constexpr std::array<std::uint32_t, 256> Dec3 =
     0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0
 };
 
-} // namespace
+} // namespace Terra::Crypto::Cipher::AES

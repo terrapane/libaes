@@ -1,7 +1,7 @@
 /*
  *  intel_intrinsics.h
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -10,7 +10,7 @@
  *
  *  Description:
  *      This file will check to see if the platform might support Intel
- *      Intrinsics and set the TERRA_USE_INTEL_INTRINSICS if so, while also
+ *      Intrinsics and set TERRA_USE_INTEL_INTRINSICS if so, while also
  *      including the Intel Intrinsics header file.  If one wants to disable
  *      use of Intel Intrinsics, turn off TERRA_ENABLE_INTEL_INTRINSICS.
  *
@@ -26,7 +26,7 @@
     defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
 
 #ifndef TERRA_USE_INTEL_INTRINSICS
-#define TERRA_USE_INTEL_INTRINSICS 1
+#define TERRA_USE_INTEL_INTRINSICS 1 // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 #include <immintrin.h>

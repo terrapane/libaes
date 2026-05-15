@@ -26,12 +26,14 @@
 #ifdef TERRA_USE_INTEL_INTRINSICS
 
 #include <cstring>
-#include <algorithm>
+#include <cstdint>
+#include <span>
+#include <array>
 #include <terra/secutil/secure_erase.h>
+#include <terra/crypto/cipher/aes.h>
 #include "aes_intel.h"
-#include "aes_tables.h"
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 /*
@@ -85,7 +87,7 @@ AESIntel::AESIntel() noexcept :
  *  Comments:
  *      None.
  */
-AESIntel::AESIntel(const std::span<const std::uint8_t> key) : AESIntel()
+AESIntel::AESIntel(std::span<const std::uint8_t> key) : AESIntel()
 {
     // Only set the key if AES-NI instructions are supported
     if (GetEngineType() == AESEngineType::Intel) SetKey(key);
@@ -242,7 +244,7 @@ AESIntel &AESIntel::operator=(AESIntel &&other) noexcept
  *  Comments:
  *      None.
  */
-void AESIntel::SetKey(const std::span<const std::uint8_t> key)
+void AESIntel::SetKey(std::span<const std::uint8_t> key)
 {
     // Zero the key schedule
     SecUtil::SecureErase(W);
@@ -481,7 +483,7 @@ void AESIntel::ClearKeyState()
  *      None.
  */
 void AESIntel::Encrypt(
-                const std::span<const std::uint8_t, AES_Block_Size> plaintext,
+                std::span<const std::uint8_t, AES_Block_Size> plaintext,
                 std::span<std::uint8_t, AES_Block_Size> ciphertext) noexcept
 {
     // Step 1 - AddRoundKey() (i.e., XOR with W[0])
@@ -543,7 +545,7 @@ void AESIntel::Encrypt(
  *      None.
  */
 void AESIntel::Decrypt(
-                const std::span<const std::uint8_t, AES_Block_Size> ciphertext,
+                std::span<const std::uint8_t, AES_Block_Size> ciphertext,
                 std::span<std::uint8_t, AES_Block_Size> plaintext) noexcept
 {
     // Step 1 - AddRoundKey() (i.e., XOR with W[0])
@@ -657,6 +659,6 @@ bool AESIntel::operator!=(const AESIntel &other) const
     return !(*this == other);
 }
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES
 
 #endif // TERRA_USE_INTEL_INTRINSICS

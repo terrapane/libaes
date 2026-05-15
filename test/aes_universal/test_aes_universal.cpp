@@ -1,7 +1,7 @@
 /*
  *  test_aes_universal.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -25,8 +25,9 @@
 #include <terra/stf/adapters/integral_array.h>
 #include <terra/stf/adapters/integral_vector.h>
 #include <terra/stf/stf.h>
+#include "aes_definitions.h"
 
-using namespace Terra::Crypto::Cipher;
+using namespace Terra::Crypto::Cipher::AES;
 
 // Test the function that indicated the engine type
 STF_TEST(AESUniversal, EngineCheck)
@@ -46,7 +47,7 @@ STF_TEST(AESUniversal, TestKeyExpansion128)
     };
 
     // Expected values of W
-    const std::array<std::uint_fast32_t, 60> Expected_W
+    const std::array<AESInt32, 60> Expected_W
     {
         0x2b7e1516, 0x28aed2a6, 0xabf71588, 0x09cf4f3c,
         0xa0fafe17, 0x88542cb1, 0x23a33939, 0x2a6c7605,
@@ -68,7 +69,7 @@ STF_TEST(AESUniversal, TestKeyExpansion128)
     };
 
     // Expected values of DW
-    const std::array<std::uint_fast32_t, 60> Expected_DW
+    const std::array<AESInt32, 60> Expected_DW
     {
         0xd014f9a8, 0xc9ee2589, 0xe13f0cc8, 0xb6630ca6,
         0x0c7b5a63, 0x1319eafe, 0xb0398890, 0x664cfbb4,
@@ -93,7 +94,7 @@ STF_TEST(AESUniversal, TestKeyExpansion128)
     class AESUniversal_ : public AESUniversal
     {
         public:
-            AESUniversal_(const std::span<const std::uint8_t> key) :
+            AESUniversal_(std::span<const std::uint8_t> key) :
                 AESUniversal(key)
             {
                 // Nothing to do here
@@ -123,7 +124,7 @@ STF_TEST(AESUniversal, TestKeyExpansion192)
     };
 
     // Expected values of W
-    const std::array<std::uint_fast32_t, 60> Expected_W
+    const std::array<AESInt32, 60> Expected_W
     {
         0x8e73b0f7, 0xda0e6452, 0xc810f32b, 0x809079e5,
         0x62f8ead2, 0x522c6b7b, 0xfe0c91f7, 0x2402f5a5,
@@ -145,7 +146,7 @@ STF_TEST(AESUniversal, TestKeyExpansion192)
     };
 
     // Expected values of DW
-    const std::array<std::uint_fast32_t, 60> Expected_DW
+    const std::array<AESInt32, 60> Expected_DW
     {
         0xe98ba06f, 0x448c773c, 0x8ecc7204, 0x01002202,
         0xac491644, 0xe55710b7, 0x46c08a75, 0xc89b2cad,
@@ -170,7 +171,7 @@ STF_TEST(AESUniversal, TestKeyExpansion192)
     class AESUniversal_ : public AESUniversal
     {
         public:
-            AESUniversal_(const std::span<const std::uint8_t> key) :
+            AESUniversal_(std::span<const std::uint8_t> key) :
                 AESUniversal(key)
             {
                 // Nothing to do here
@@ -201,7 +202,7 @@ STF_TEST(AESUniversal, TestKeyExpansion256)
     };
 
     // Expected values of W
-    const std::array<std::uint_fast32_t, 60> Expected_W
+    const std::array<AESInt32, 60> Expected_W
     {
         0x603deb10, 0x15ca71be, 0x2b73aef0, 0x857d7781,
         0x1f352c07, 0x3b6108d7, 0x2d9810a3, 0x0914dff4,
@@ -221,7 +222,7 @@ STF_TEST(AESUniversal, TestKeyExpansion256)
     };
 
     // Expected values of DW
-    const std::array<std::uint_fast32_t, 60> Expected_DW
+    const std::array<AESInt32, 60> Expected_DW
     {
         0xfe4890d1, 0xe6188d0b, 0x046df344, 0x706c631e,
         0xada23f49, 0x63e23b24, 0x55427c8a, 0x5c709104,
@@ -244,7 +245,7 @@ STF_TEST(AESUniversal, TestKeyExpansion256)
     class AESUniversal_ : public AESUniversal
     {
         public:
-            AESUniversal_(const std::span<const std::uint8_t> key) :
+            AESUniversal_(std::span<const std::uint8_t> key) :
                 AESUniversal(key)
             {
                 // Nothing to do here

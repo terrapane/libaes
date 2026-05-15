@@ -38,7 +38,7 @@
 #include "cpu_check.h"
 #include "aes_unavailable.h"
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 #ifdef TERRA_USE_INTEL_INTRINSICS
@@ -58,10 +58,10 @@ class AESIntel : public AESEngine
 
     public:
         AESIntel() noexcept;
-        AESIntel(const std::span<const std::uint8_t> key);
+        explicit AESIntel(std::span<const std::uint8_t> key);
         AESIntel(const AESIntel &other) noexcept;
         AESIntel(AESIntel &&other) noexcept;
-        ~AESIntel();
+        ~AESIntel() override;
 
         AESIntel &operator=(const AESIntel &other);
         AESIntel &operator=(AESIntel &&other) noexcept;
@@ -73,14 +73,14 @@ class AESIntel : public AESEngine
             return AESEngineType::Unavailable;
         }
 
-        void SetKey(const std::span<const std::uint8_t> key) override;
+        void SetKey(std::span<const std::uint8_t> key) override;
 
         void ClearKeyState() override;
 
-        void Encrypt(const std::span<const std::uint8_t, 16> plaintext,
+        void Encrypt(std::span<const std::uint8_t, 16> plaintext,
                      std::span<std::uint8_t, 16> ciphertext) noexcept override;
 
-        void Decrypt(const std::span<const std::uint8_t, 16> ciphertext,
+        void Decrypt(std::span<const std::uint8_t, 16> ciphertext,
                      std::span<std::uint8_t, 16> plaintext) noexcept override;
 
         bool operator==(const AESIntel &other) const;
@@ -108,5 +108,5 @@ using AESIntel = AESUnavailable;
 
 #endif // TERRA_USE_INTEL_INTRINSICS
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES
 

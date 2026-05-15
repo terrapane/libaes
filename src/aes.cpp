@@ -19,15 +19,15 @@
  */
 
 #include <algorithm>
-#include <terra/secutil/secure_erase.h>
+#include <span>
+#include <memory>
+#include <cstdint>
 #include <terra/crypto/cipher/aes.h>
-#include "aes_tables.h"
-#include "aes_utilities.h"
 #include "aes_universal.h"
 #include "aes_intel.h"
 #include "cpu_check.h"
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 /*
@@ -71,7 +71,7 @@ AES::AES()
  *  Comments:
  *      None.
  */
-AES::AES(const std::span<const std::uint8_t> key) : AES()
+AES::AES(std::span<const std::uint8_t> key) : AES()
 {
     aes_engine->SetKey(key);
 }
@@ -100,7 +100,7 @@ AES::AES(const AES &other)
     {
         case AESEngineType::Universal:
             {
-                AESUniversal *other_engine =
+                const AESUniversal *other_engine =
                     dynamic_cast<AESUniversal *>(other.aes_engine.get());
                 aes_engine = std::make_unique<AESUniversal>(*other_engine);
             }
@@ -108,7 +108,7 @@ AES::AES(const AES &other)
 
         case AESEngineType::Intel:
             {
-                AESIntel *other_engine =
+                const AESIntel *other_engine =
                     dynamic_cast<AESIntel *>(other.aes_engine.get());
                 aes_engine = std::make_unique<AESIntel>(*other_engine);
             }
@@ -206,7 +206,7 @@ void AES::CreateEngine()
  *  Comments:
  *      None.
  */
-void AES::SetKey(const std::span<const std::uint8_t> key)
+void AES::SetKey(std::span<const std::uint8_t> key)
 {
     aes_engine->SetKey(key);
 }
@@ -233,7 +233,7 @@ void AES::SetKey(const std::span<const std::uint8_t> key)
  *  Comments:
  *      None.
  */
-void AES::Encrypt(const std::span<const std::uint8_t, 16> plaintext,
+void AES::Encrypt(std::span<const std::uint8_t, 16> plaintext,
                   std::span<std::uint8_t, 16> ciphertext) noexcept
 {
     aes_engine->Encrypt(plaintext, ciphertext);
@@ -261,7 +261,7 @@ void AES::Encrypt(const std::span<const std::uint8_t, 16> plaintext,
  *  Comments:
  *      None.
  */
-void AES::Decrypt(const std::span<const std::uint8_t, 16> ciphertext,
+void AES::Decrypt(std::span<const std::uint8_t, 16> ciphertext,
                   std::span<std::uint8_t, 16> plaintext) noexcept
 {
     aes_engine->Decrypt(ciphertext, plaintext);
@@ -298,9 +298,9 @@ bool AES::operator==(const AES &other) const
     {
         case AESEngineType::Universal:
             {
-                AESUniversal *this_engine =
+                const AESUniversal *this_engine =
                     dynamic_cast<AESUniversal *>(aes_engine.get());
-                AESUniversal *other_engine =
+                const AESUniversal *other_engine =
                     dynamic_cast<AESUniversal *>(other.aes_engine.get());
                 if ((this_engine == nullptr) && (other_engine == nullptr))
                 {
@@ -316,9 +316,9 @@ bool AES::operator==(const AES &other) const
 
         case AESEngineType::Intel:
             {
-                AESIntel *this_engine =
+                const AESIntel *this_engine =
                     dynamic_cast<AESIntel *>(aes_engine.get());
-                AESIntel *other_engine =
+                const AESIntel *other_engine =
                     dynamic_cast<AESIntel *>(other.aes_engine.get());
                 if ((this_engine == nullptr) && (other_engine == nullptr))
                 {
@@ -387,14 +387,14 @@ AES &AES::operator=(const AES &other)
     {
         case AESEngineType::Universal:
             {
-                AESUniversal *other_engine =
+                const AESUniversal *other_engine =
                     dynamic_cast<AESUniversal *>(other.aes_engine.get());
                 aes_engine = std::make_unique<AESUniversal>(*other_engine);
             }
             break;
         case AESEngineType::Intel:
             {
-                AESIntel *other_engine =
+                const AESIntel *other_engine =
                     dynamic_cast<AESIntel *>(other.aes_engine.get());
                 aes_engine = std::make_unique<AESIntel>(*other_engine);
             }
@@ -438,4 +438,4 @@ AES &AES::operator=(AES &&other) noexcept
     return *this;
 }
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

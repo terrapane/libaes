@@ -2,12 +2,14 @@
 
 v1.1.5
 
-- Updated dependencies
 - Replaced std::copy with std::ranges::copy, etc.
 - Switched Intel AES code to use SecureArray
 - Removed pointers from AES KW and added more tests
 - Remove some pointer arithmetic from the AES Intel code
 - Used std::span for benefit of bounds checking
+- Addressed many clang-tidy nits
+- Made the 32-bit integer type used by the AESUniversal object a defined type
+- Updated dependencies
 
 v1.1.4
 

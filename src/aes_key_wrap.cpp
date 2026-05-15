@@ -19,13 +19,16 @@
  *      None.
  */
 
+#include <cstdint>
 #include <cstring>
 #include <algorithm>
+#include <span>
 #include <terra/crypto/cipher/aes_key_wrap.h>
+#include <terra/crypto/cipher/aes.h>
 #include <terra/bitutil/byte_order.h>
 #include <terra/secutil/secure_erase.h>
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 /*
@@ -84,7 +87,7 @@ AESKeyWrap::AESKeyWrap() :
  *  Comments:
  *      None.
  */
-AESKeyWrap::AESKeyWrap(const std::span<const std::uint8_t> key) :
+AESKeyWrap::AESKeyWrap(std::span<const std::uint8_t> key) :
     aes(key),
     i{},
     j{},
@@ -153,7 +156,7 @@ AESKeyWrap::~AESKeyWrap()
  *  Comments:
  *      None.
  */
-void AESKeyWrap::SetKey(const std::span<const std::uint8_t> key)
+void AESKeyWrap::SetKey(std::span<const std::uint8_t> key)
 {
     aes.SetKey(key);
 }
@@ -187,9 +190,9 @@ void AESKeyWrap::SetKey(const std::span<const std::uint8_t> key)
  *  Comments:
  *      The plaintext and ciphertext buffers must be distinct.
  */
-void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
+void AESKeyWrap::Wrap(std::span<const std::uint8_t> plaintext,
                       std::span<std::uint8_t> ciphertext,
-                      const std::span<const std::uint8_t> alternative_iv)
+                      std::span<const std::uint8_t> alternative_iv)
 {
     // Ensure buffers appear sane ("& 0x07" performs a mod 8 check)
     if ((plaintext.size() < 16) || ((plaintext.size() & 0x07) != 0) ||
@@ -203,7 +206,7 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
     n = (plaintext.size() >> 3);
 
     // Assign a view over the intermediary buffer
-    std::span<uint8_t> A = B;
+    const std::span<uint8_t> A = B;
 
     // Assign the IV
     if (!alternative_iv.empty())
@@ -286,10 +289,10 @@ void AESKeyWrap::Wrap(const std::span<const std::uint8_t> plaintext,
  *  Comments:
  *      The plaintext and ciphertext buffers must be distinct.
  */
-bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
+bool AESKeyWrap::Unwrap(std::span<const std::uint8_t> ciphertext,
                         std::span<std::uint8_t> plaintext,
                         std::span<std::uint8_t> integrity,
-                        const std::span<const std::uint8_t> alternative_iv)
+                        std::span<const std::uint8_t> alternative_iv)
 {
     // Ensure buffers appear sane ("& 0x07" performs a mod 8 check)
     if ((ciphertext.size() < 24) || ((ciphertext.size() & 0x07) != 0) ||
@@ -304,7 +307,7 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
     n = (ciphertext.size() - 8) >> 3;
 
     // Assign a view over the intermediary buffer
-    std::span<std::uint8_t> A = B;
+    const std::span<std::uint8_t> A = B;
 
     // Assign A to be C[0] (first 64-bit block of the ciphertext)
     std::ranges::copy(ciphertext.first(8), A.begin());
@@ -390,9 +393,9 @@ bool AESKeyWrap::Unwrap(const std::span<const std::uint8_t> ciphertext,
  *      The plaintext and ciphertext buffers must be distinct.
  */
 std::size_t AESKeyWrap::WrapWithPadding(
-                            const std::span<const std::uint8_t> plaintext,
+                            std::span<const std::uint8_t> plaintext,
                             std::span<std::uint8_t> ciphertext,
-                            const std::span<const std::uint8_t> alternative_iv)
+                            std::span<const std::uint8_t> alternative_iv)
 {
     // Check to ensure that the plaintext length is properly bounded
     if (plaintext.empty() || (plaintext.size() > AES_Key_Wrap_with_Padding_Max))
@@ -502,9 +505,9 @@ std::size_t AESKeyWrap::WrapWithPadding(
  *      The plaintext and ciphertext buffers must be distinct.
  */
 std::size_t AESKeyWrap::UnwrapWithPadding(
-                            const std::span<const std::uint8_t> ciphertext,
+                            std::span<const std::uint8_t> ciphertext,
                             std::span<std::uint8_t> plaintext,
-                            const std::span<const std::uint8_t> alternative_iv)
+                            std::span<const std::uint8_t> alternative_iv)
 {
     // Ensure buffers appear sane ("& 0x07" performs a mod 8 check)
     if ((ciphertext.size() < 16) || ((ciphertext.size() & 0x07) != 0) ||
@@ -589,4 +592,4 @@ std::size_t AESKeyWrap::UnwrapWithPadding(
     return message_length_indicator;
 }
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

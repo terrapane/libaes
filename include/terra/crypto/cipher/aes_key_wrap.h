@@ -29,7 +29,7 @@
 #include <array>
 #include "aes.h"
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 class AESKeyWrap
@@ -51,27 +51,32 @@ class AESKeyWrap
         static constexpr std::size_t AES_Key_Wrap_with_Padding_Max{0xFFFFFFFF};
 
         AESKeyWrap();
-        AESKeyWrap(const std::span<const std::uint8_t> key);
+        explicit AESKeyWrap(std::span<const std::uint8_t> key);
+        AESKeyWrap(const AESKeyWrap &) = default;
+        AESKeyWrap(AESKeyWrap &&) = default;
         ~AESKeyWrap();
 
-        void SetKey(const std::span<const std::uint8_t> key);
+        AESKeyWrap &operator=(const AESKeyWrap &) = default;
+        AESKeyWrap &operator=(AESKeyWrap &&) = default;
 
-        void Wrap(const std::span<const std::uint8_t> plaintext,
+        void SetKey(std::span<const std::uint8_t> key);
+
+        void Wrap(std::span<const std::uint8_t> plaintext,
                   std::span<std::uint8_t> ciphertext,
-                  const std::span<const std::uint8_t> alternative_iv = {});
-        bool Unwrap(const std::span<const std::uint8_t> ciphertext,
+                  std::span<const std::uint8_t> alternative_iv = {});
+        bool Unwrap(std::span<const std::uint8_t> ciphertext,
                     std::span<std::uint8_t> plaintext,
                     std::span<std::uint8_t> integrity = {},
-                    const std::span<const std::uint8_t> alternative_iv = {});
+                    std::span<const std::uint8_t> alternative_iv = {});
 
         std::size_t WrapWithPadding(
-                    const std::span<const std::uint8_t> plaintext,
+                    std::span<const std::uint8_t> plaintext,
                     std::span<std::uint8_t> ciphertext,
-                    const std::span<const std::uint8_t> alternative_iv = {});
+                    std::span<const std::uint8_t> alternative_iv = {});
         std::size_t UnwrapWithPadding(
-                    const std::span<const std::uint8_t> ciphertext,
+                    std::span<const std::uint8_t> ciphertext,
                     std::span<std::uint8_t> plaintext,
-                    const std::span<const std::uint8_t> alternative_iv = {});
+                    std::span<const std::uint8_t> alternative_iv = {});
 
     protected:
         AES aes;                                // AES block cipher
@@ -94,4 +99,4 @@ class AESKeyWrap
                                                 // Plaintext for one block
 };
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

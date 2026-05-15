@@ -1,7 +1,7 @@
 /*
  *  cpu_check.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -32,7 +32,7 @@
 #endif
 #include "cpu_check.h"
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 #ifdef TERRA_USE_INTEL_INTRINSICS
@@ -103,4 +103,4 @@ bool CPUSupportsAES_NI()
 
 #endif // TERRA_USE_INTEL_INTRINSICS
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

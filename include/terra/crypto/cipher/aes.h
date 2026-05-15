@@ -1,7 +1,7 @@
 /*
  *  aes.h
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -26,7 +26,7 @@
 #include <span>
 #include <memory>
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 // Define an exception class for AES-related exceptions
@@ -48,20 +48,25 @@ class AESEngine
 {
     public:
         AESEngine() = default;
+        AESEngine(const AESEngine &) = delete;
+        AESEngine(AESEngine &&) = default;
         virtual ~AESEngine() = default;
+
+        AESEngine &operator=(const AESEngine &) = delete;
+        AESEngine &operator=(AESEngine &&) = default;
 
         virtual AESEngineType GetEngineType() const noexcept = 0;
 
-        virtual void SetKey(const std::span<const std::uint8_t> key) = 0;
+        virtual void SetKey(std::span<const std::uint8_t> key) = 0;
 
         virtual void ClearKeyState() = 0;
 
         virtual void Encrypt(
-            const std::span<const std::uint8_t, 16> plaintext,
+            std::span<const std::uint8_t, 16> plaintext,
             std::span<std::uint8_t, 16> ciphertext) noexcept = 0;
 
         virtual void Decrypt(
-            const std::span<const std::uint8_t, 16> ciphertext,
+            std::span<const std::uint8_t, 16> ciphertext,
             std::span<std::uint8_t, 16> plaintext) noexcept = 0;
 };
 
@@ -70,7 +75,7 @@ class AES
 {
     public:
         AES();
-        AES(const std::span<const std::uint8_t> key);
+        explicit AES(std::span<const std::uint8_t> key);
         AES(const AES &other);
         AES(AES &&other) noexcept;
         ~AES() = default;
@@ -78,12 +83,12 @@ class AES
         AES &operator=(const AES &other);
         AES &operator=(AES &&other) noexcept;
 
-        void SetKey(const std::span<const std::uint8_t> key);
+        void SetKey(std::span<const std::uint8_t> key);
 
-        void Encrypt(const std::span<const std::uint8_t, 16> plaintext,
+        void Encrypt(std::span<const std::uint8_t, 16> plaintext,
                      std::span<std::uint8_t, 16> ciphertext) noexcept;
 
-        void Decrypt(const std::span<const std::uint8_t, 16> ciphertext,
+        void Decrypt(std::span<const std::uint8_t, 16> ciphertext,
                      std::span<std::uint8_t, 16> plaintext) noexcept;
 
         bool operator==(const AES &other) const;
@@ -95,4 +100,4 @@ class AES
         std::unique_ptr<AESEngine> aes_engine;  // AES engine
 };
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

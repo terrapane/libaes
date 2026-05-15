@@ -1,7 +1,7 @@
 /*
  *  aes_utilities.h
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -18,21 +18,15 @@
 
 #pragma once
 
-#include <type_traits>
-#include <limits.h>
 #include <cstdint>
 #include <array>
 #include <span>
 #include <terra/bitutil/bit_rotation.h>
 #include "aes_tables.h"
+#include "aes_definitions.h"
 
-namespace
+namespace Terra::Crypto::Cipher::AES
 {
-
-// Define the concept defining an unsigned integer that is 32-bits or larger
-template<typename T>
-concept Unsigned32OrLarger =
-    std::is_unsigned_v<T> && (sizeof(T) * CHAR_BIT >= 32);
 
 /*
  *  GetWordFromBuffer
@@ -57,14 +51,13 @@ concept Unsigned32OrLarger =
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr T GetWordFromBuffer(const std::span<const std::uint8_t> buffer,
-                              const std::size_t offset)
+constexpr AESInt32 GetWordFromBuffer(std::span<const std::uint8_t> buffer,
+                                     const std::size_t offset)
 {
-    return static_cast<T>(buffer[(offset << 2)    ]) << 24 |
-           static_cast<T>(buffer[(offset << 2) + 1]) << 16 |
-           static_cast<T>(buffer[(offset << 2) + 2]) <<  8 |
-           static_cast<T>(buffer[(offset << 2) + 3]);
+    return static_cast<AESInt32>(buffer[(offset << 2)    ]) << 24 |
+           static_cast<AESInt32>(buffer[(offset << 2) + 1]) << 16 |
+           static_cast<AESInt32>(buffer[(offset << 2) + 2]) <<  8 |
+           static_cast<AESInt32>(buffer[(offset << 2) + 3]);
 }
 
 /*
@@ -94,8 +87,7 @@ constexpr T GetWordFromBuffer(const std::span<const std::uint8_t> buffer,
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr void PutStateColumn(const T value,
+constexpr void PutStateColumn(const AESInt32 value,
                               const std::size_t column,
                               std::span<std::uint8_t, 16> ciphertext)
 {
@@ -121,13 +113,12 @@ constexpr void PutStateColumn(const T value,
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr T RotWord(const T word)
+constexpr AESInt32 RotWord(const AESInt32 word)
 {
     return Terra::BitUtil::RotateLeft(word,
                                       8,
                                       32,
-                                      T(0xffff'ffff));
+                                      static_cast<AESInt32>(0xffff'ffff));
 }
 
 /*
@@ -146,13 +137,12 @@ constexpr T RotWord(const T word)
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr T SubBytes(const T value)
+constexpr AESInt32 SubBytes(const AESInt32 value)
 {
-    return static_cast<T>(Sbox[(value >> 24) & 0xff]) << 24 |
-           static_cast<T>(Sbox[(value >> 16) & 0xff]) << 16 |
-           static_cast<T>(Sbox[(value >>  8) & 0xff]) <<  8 |
-           static_cast<T>(Sbox[(value      ) & 0xff]);
+    return static_cast<AESInt32>(std::span(Sbox)[(value >> 24) & 0xff]) << 24 |
+           static_cast<AESInt32>(std::span(Sbox)[(value >> 16) & 0xff]) << 16 |
+           static_cast<AESInt32>(std::span(Sbox)[(value >>  8) & 0xff]) <<  8 |
+           static_cast<AESInt32>(std::span(Sbox)[(value      ) & 0xff]);
 }
 
 /*
@@ -177,13 +167,18 @@ constexpr T SubBytes(const T value)
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr T SubBytesShiftRows(std::size_t column, const std::array<T, 4> &state)
+constexpr AESInt32 SubBytesShiftRows(std::size_t column,
+                                     std::span<const AESInt32, 4> state)
 {
-    return static_cast<T>(Sbox[(state[(0 + column) % 4] >> 24) & 0xff]) << 24 |
-           static_cast<T>(Sbox[(state[(1 + column) % 4] >> 16) & 0xff]) << 16 |
-           static_cast<T>(Sbox[(state[(2 + column) % 4] >>  8) & 0xff]) <<  8 |
-           static_cast<T>(Sbox[(state[(3 + column) % 4]      ) & 0xff]);
+    return
+        static_cast<AESInt32>(
+            std::span(Sbox)[(state[(0 + column) % 4] >> 24) & 0xff]) << 24 |
+        static_cast<AESInt32>(
+            std::span(Sbox)[(state[(1 + column) % 4] >> 16) & 0xff]) << 16 |
+        static_cast<AESInt32>(
+            std::span(Sbox)[(state[(2 + column) % 4] >>  8) & 0xff]) <<  8 |
+        static_cast<AESInt32>(
+            std::span(Sbox)[(state[(3 + column) % 4]      ) & 0xff]);
 }
 
 /*
@@ -208,18 +203,17 @@ constexpr T SubBytesShiftRows(std::size_t column, const std::array<T, 4> &state)
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr T InvSubBytesShiftRows(std::size_t column,
-                                 const std::array<T, 4> &state)
+constexpr AESInt32 InvSubBytesShiftRows(std::size_t column,
+                                        std::span<const AESInt32, 4> state)
 {
-    return static_cast<T>(
-                InverseSbox[(state[(0 + column) % 4] >> 24) & 0xff]) << 24 |
-           static_cast<T>(
-                InverseSbox[(state[(3 + column) % 4] >> 16) & 0xff]) << 16 |
-           static_cast<T>(
-                InverseSbox[(state[(2 + column) % 4] >>  8) & 0xff]) <<  8 |
-           static_cast<T>(
-                InverseSbox[(state[(1 + column) % 4]      ) & 0xff]);
+    return static_cast<AESInt32>(
+        std::span(InverseSbox)[(state[(0 + column) % 4] >> 24) & 0xff]) << 24 |
+           static_cast<AESInt32>(
+        std::span(InverseSbox)[(state[(3 + column) % 4] >> 16) & 0xff]) << 16 |
+           static_cast<AESInt32>(
+        std::span(InverseSbox)[(state[(2 + column) % 4] >>  8) & 0xff]) <<  8 |
+           static_cast<AESInt32>(
+        std::span(InverseSbox)[(state[(1 + column) % 4]      ) & 0xff]);
 }
 
 /*
@@ -239,8 +233,7 @@ constexpr T InvSubBytesShiftRows(std::size_t column,
  *  Comments:
  *      None.
  */
-template<Unsigned32OrLarger T>
-constexpr T AddRoundKey(const T x, const T y)
+constexpr AESInt32 AddRoundKey(const AESInt32 x, const AESInt32 y)
 {
     return x ^ y;
 }
@@ -267,14 +260,14 @@ constexpr T AddRoundKey(const T x, const T y)
  *  Comments:
  *      The constants added to column performs the row shifts.
  */
-template<Unsigned32OrLarger T>
-constexpr T MixColShiftRow(const std::size_t column,
-                           const std::array<T, 4> &state)
+constexpr AESInt32 MixColShiftRow(const std::size_t column,
+                                  std::span<const AESInt32, 4> state)
 {
-    return static_cast<T>(Enc0[(state[(0 + column) % 4] >> 24) & 0xff] ^
-                          Enc1[(state[(1 + column) % 4] >> 16) & 0xff] ^
-                          Enc2[(state[(2 + column) % 4] >>  8) & 0xff] ^
-                          Enc3[(state[(3 + column) % 4]      ) & 0xff]);
+    return static_cast<AESInt32>(
+        std::span(Enc0)[(state[(0 + column) % 4] >> 24) & 0xff] ^
+        std::span(Enc1)[(state[(1 + column) % 4] >> 16) & 0xff] ^
+        std::span(Enc2)[(state[(2 + column) % 4] >>  8) & 0xff] ^
+        std::span(Enc3)[(state[(3 + column) % 4]      ) & 0xff]);
 }
 
 /*
@@ -308,13 +301,13 @@ constexpr T MixColShiftRow(const std::size_t column,
  *      This is used by the decryption round key generation as explained in
  *      section 5.3.5 of FIPS 197.  Refer to the README.md for more detail.
  */
-template<Unsigned32OrLarger T>
-constexpr T FastInvMixColumn(const T value)
+constexpr AESInt32 FastInvMixColumn(const AESInt32 value)
 {
-    return static_cast<T>(Dec0[static_cast<T>(Sbox[(value >> 24) & 0xff])] ^
-                          Dec1[static_cast<T>(Sbox[(value >> 16) & 0xff])] ^
-                          Dec2[static_cast<T>(Sbox[(value >>  8) & 0xff])] ^
-                          Dec3[static_cast<T>(Sbox[(value      ) & 0xff])]);
+    return static_cast<AESInt32>(
+        std::span(Dec0)[std::span(Sbox)[(value >> 24) & 0xff]] ^
+        std::span(Dec1)[std::span(Sbox)[(value >> 16) & 0xff]] ^
+        std::span(Dec2)[std::span(Sbox)[(value >>  8) & 0xff]] ^
+        std::span(Dec3)[std::span(Sbox)[(value      ) & 0xff]]);
 }
 
 /*
@@ -339,14 +332,14 @@ constexpr T FastInvMixColumn(const T value)
  *  Comments:
  *      The constants added to column performs the row shifts.
  */
-template<Unsigned32OrLarger T>
-constexpr T InvMixColShiftRow(const std::size_t column,
-                              const std::array<T, 4> &state)
+constexpr AESInt32 InvMixColShiftRow(const std::size_t column,
+                                     std::span<const AESInt32, 4> state)
 {
-    return static_cast<T>(Dec0[(state[(0 + column) % 4] >> 24) & 0xff] ^
-                          Dec1[(state[(3 + column) % 4] >> 16) & 0xff] ^
-                          Dec2[(state[(2 + column) % 4] >>  8) & 0xff] ^
-                          Dec3[(state[(1 + column) % 4]      ) & 0xff]);
+    return static_cast<AESInt32>(
+        std::span(Dec0)[(state[(0 + column) % 4] >> 24) & 0xff] ^
+        std::span(Dec1)[(state[(3 + column) % 4] >> 16) & 0xff] ^
+        std::span(Dec2)[(state[(2 + column) % 4] >>  8) & 0xff] ^
+        std::span(Dec3)[(state[(1 + column) % 4]      ) & 0xff]);
 }
 
-} // namespace
+} // namespace Terra::Crypto::Cipher::AES

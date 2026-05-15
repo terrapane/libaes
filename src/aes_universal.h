@@ -33,8 +33,9 @@
 #include <array>
 #include <terra/crypto/cipher/aes.h>
 #include <terra/secutil/secure_array.h>
+#include "aes_definitions.h"
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
 // Define the AESUniversal class
@@ -52,10 +53,10 @@ class AESUniversal : public AESEngine
 
     public:
         AESUniversal() noexcept;
-        AESUniversal(const std::span<const std::uint8_t> key);
+        explicit AESUniversal(std::span<const std::uint8_t> key);
         AESUniversal(const AESUniversal &other) noexcept;
         AESUniversal(AESUniversal &&other) noexcept;
-        ~AESUniversal();
+        ~AESUniversal() override;
 
         AESUniversal &operator=(const AESUniversal &other);
         AESUniversal &operator=(AESUniversal &&other) noexcept;
@@ -65,17 +66,17 @@ class AESUniversal : public AESEngine
             return AESEngineType::Universal;
         }
 
-        void SetKey(const std::span<const std::uint8_t> key) override;
+        void SetKey(std::span<const std::uint8_t> key) override;
 
         void ClearKeyState() override;
 
         void Encrypt(
-            const std::span<const std::uint8_t, AES_Block_Size> plaintext,
+            std::span<const std::uint8_t, AES_Block_Size> plaintext,
             std::span<std::uint8_t, AES_Block_Size> ciphertext) noexcept
             override;
 
         void Decrypt(
-            const std::span<const std::uint8_t, AES_Block_Size> ciphertext,
+            std::span<const std::uint8_t, AES_Block_Size> ciphertext,
             std::span<std::uint8_t, AES_Block_Size> plaintext) noexcept
             override;
 
@@ -87,16 +88,16 @@ class AESUniversal : public AESEngine
         std::size_t Nk;                         // 32-bit words in cipher key
 
         // State array of four columns
-        SecUtil::SecureArray<std::uint_fast32_t, Nb> state;
+        SecUtil::SecureArray<AESInt32, Nb> state;
 
         // Alternating state array (temporary use during encryption/decryption)
-        SecUtil::SecureArray<std::uint_fast32_t, Nb> alt_state;
+        SecUtil::SecureArray<AESInt32, Nb> alt_state;
 
         // Encryption round key schedule array
-        SecUtil::SecureArray<std::uint_fast32_t, Nb * (Max_Rounds + 1)> W;
+        SecUtil::SecureArray<AESInt32, Nb * (Max_Rounds + 1)> W;
 
         // Decryption round key schedule array
-        SecUtil::SecureArray<std::uint_fast32_t, Nb * (Max_Rounds + 1)> DW;
+        SecUtil::SecureArray<AESInt32, Nb * (Max_Rounds + 1)> DW;
 };
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

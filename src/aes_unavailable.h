@@ -1,7 +1,7 @@
 /*
  *  aes_unavailable.h
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -27,37 +27,54 @@
 #include <cstdint>
 #include <terra/crypto/cipher/aes.h>
 
-namespace Terra::Crypto::Cipher
+namespace Terra::Crypto::Cipher::AES
 {
 
-struct AESUnavailable : public AESEngine
+class AESUnavailable : public AESEngine
 {
-    AESUnavailable() = default;
-    AESUnavailable(const std::span<const std::uint8_t>) {}
-    ~AESUnavailable() = default;
+    public:
+        AESUnavailable() = default;
+        AESUnavailable(const AESUnavailable &) = delete;
+        AESUnavailable(AESUnavailable &&)  = default;
+        ~AESUnavailable() override = default;
 
-    AESEngineType GetEngineType() const noexcept override
-    {
-        return AESEngineType::Unavailable;
-    }
+        AESUnavailable &operator=(const AESUnavailable &) = delete;
+        AESUnavailable &operator=(AESUnavailable &&) = default;
 
-    void SetKey(const std::span<const std::uint8_t>) override {}
+        AESEngineType GetEngineType() const noexcept override
+        {
+            return AESEngineType::Unavailable;
+        }
 
-    void ClearKeyState() override {}
+        void SetKey([[maybe_unused]] std::span<const std::uint8_t> key) override
+        {
+        }
 
-    void Encrypt(const std::span<const std::uint8_t, 16>,
-                 std::span<std::uint8_t, 16>) noexcept override
-    {
-    }
+        void ClearKeyState() override {}
 
-    void Decrypt(const std::span<const std::uint8_t, 16>,
-                 std::span<std::uint8_t, 16>) noexcept override
-    {
-    }
+        void Encrypt(
+            [[maybe_unused]] std::span<const std::uint8_t, 16> plaintext,
+            [[maybe_unused]] std::span<std::uint8_t, 16> ciphertext) noexcept
+            override
+        {
+        }
 
-    bool operator==(const AESUnavailable &) const { return true; }
+        void Decrypt(
+            [[maybe_unused]] std::span<const std::uint8_t, 16> ciphertext,
+            [[maybe_unused]] std::span<std::uint8_t, 16> plaintext) noexcept
+            override
+        {
+        }
 
-    bool operator!=(const AESUnavailable &) const { return false; }
+        bool operator==([[maybe_unused]] const AESUnavailable &other) const
+        {
+            return true;
+        }
+
+        bool operator!=([[maybe_unused]] const AESUnavailable &other) const
+        {
+            return false;
+        }
 };
 
-} // namespace Terra::Crypto::Cipher
+} // namespace Terra::Crypto::Cipher::AES

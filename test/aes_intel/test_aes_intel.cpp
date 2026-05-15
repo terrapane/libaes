@@ -1,7 +1,7 @@
 /*
  *  test_aes_intel.cpp
  *
- *  Copyright (C) 2024, 2025
+ *  Copyright (C) 2024, 2025, 2026
  *  Terrapane Corporation
  *  All Rights Reserved
  *
@@ -27,7 +27,7 @@
 #include <terra/stf/adapters/integral_vector.h>
 #include <terra/stf/stf.h>
 
-using namespace Terra::Crypto::Cipher;
+using namespace Terra::Crypto::Cipher::AES;
 
 #ifdef TERRA_USE_INTEL_INTRINSICS
 
@@ -112,7 +112,7 @@ STF_TEST(AESIntel, TestKeyExpansion128)
     class AESIntel_ : public AESIntel
     {
         public:
-            AESIntel_(const std::span<const std::uint8_t> key) : AESIntel(key)
+            AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
             {
                 // Nothing to do here
             }
@@ -223,7 +223,7 @@ STF_TEST(AESIntel, TestKeyExpansion192)
     class AESIntel_ : public AESIntel
     {
         public:
-            AESIntel_(const std::span<const std::uint8_t> key) : AESIntel(key)
+            AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
             {
                 // Nothing to do here
             }
@@ -331,7 +331,7 @@ STF_TEST(AESIntel, TestKeyExpansion256)
     class AESIntel_ : public AESIntel
     {
         public:
-            AESIntel_(const std::span<const std::uint8_t> key) : AESIntel(key)
+            AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
             {
                 // Nothing to do here
             }

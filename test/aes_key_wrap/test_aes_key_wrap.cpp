@@ -23,7 +23,7 @@
 #include <terra/crypto/cipher/aes_key_wrap.h>
 #include <terra/stf/stf.h>
 
-using namespace Terra::Crypto::Cipher;
+using namespace Terra::Crypto::Cipher::AES;
 
 // Test vector in RFC 3394 Section 4.1
 STF_TEST(AESKeyWrap, RFC3394_4_1)

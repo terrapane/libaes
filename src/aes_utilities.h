@@ -171,14 +171,17 @@ constexpr AESInt32 SubBytes(const AESInt32 value)
 constexpr AESInt32 SubBytesShiftRows(std::size_t column,
                                      std::span<const AESInt32, 4> state)
 {
-    const AESInt32 octet1 =
-            std::span(Sbox)[(state[(0 + column) % 4] >> 24U) & 0xffU] << 24U;
-    const AESInt32 octet2 =
-            std::span(Sbox)[(state[(1 + column) % 4] >> 16U) & 0xffU] << 16U;
-    const AESInt32 octet3 =
-            std::span(Sbox)[(state[(2 + column) % 4] >>  8U) & 0xffU] <<  8U;
-    const AESInt32 octet4 =
-            std::span(Sbox)[(state[(3 + column) % 4]      ) & 0xffU];
+    const AESInt32 octet1 = static_cast<AESInt32>(std::span(
+                                Sbox)[(state[(0 + column) % 4] >> 24U) & 0xffU])
+                            << 24U;
+    const AESInt32 octet2 = static_cast<AESInt32>(std::span(
+                                Sbox)[(state[(1 + column) % 4] >> 16U) & 0xffU])
+                            << 16U;
+    const AESInt32 octet3 = static_cast<AESInt32>(std::span(
+                                Sbox)[(state[(2 + column) % 4] >> 8U) & 0xffU])
+                            << 8U;
+    const AESInt32 octet4 = static_cast<AESInt32>(
+        std::span(Sbox)[(state[(3 + column) % 4]) & 0xffU]);
 
     return octet1 | octet2 | octet3 | octet4;
 }
@@ -209,13 +212,19 @@ constexpr AESInt32 InvSubBytesShiftRows(std::size_t column,
                                         std::span<const AESInt32, 4> state)
 {
     const AESInt32 octet1 =
-        std::span(InverseSbox)[(state[(0 + column) % 4] >> 24U) & 0xffU] << 24U;
+        static_cast<AESInt32>(
+            std::span(InverseSbox)[(state[(0 + column) % 4] >> 24U) & 0xffU])
+        << 24U;
     const AESInt32 octet2 =
-        std::span(InverseSbox)[(state[(3 + column) % 4] >> 16U) & 0xffU] << 16U;
+        static_cast<AESInt32>(
+            std::span(InverseSbox)[(state[(3 + column) % 4] >> 16U) & 0xffU])
+        << 16U;
     const AESInt32 octet3 =
-        std::span(InverseSbox)[(state[(2 + column) % 4] >>  8U) & 0xffU] <<  8U;
-    const AESInt32 octet4 =
-        std::span(InverseSbox)[(state[(1 + column) % 4]) & 0xffU];
+        static_cast<AESInt32>(
+            std::span(InverseSbox)[(state[(2 + column) % 4] >> 8U) & 0xffU])
+        << 8U;
+    const AESInt32 octet4 = static_cast<AESInt32>(
+        std::span(InverseSbox)[(state[(1 + column) % 4]) & 0xffU]);
 
     return octet1 | octet2 | octet3 | octet4;
 }

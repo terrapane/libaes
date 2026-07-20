@@ -19,7 +19,8 @@ set_target_properties(test_aes_universal
 # Specify the compiler options
 target_compile_options(test_aes_universal
     PRIVATE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wpedantic -Wextra -Wall -Wconversion -Wshadow>
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wpedantic -Wextra -Wall -Werror -Wconversion -Wshadow>
+        $<$<CXX_COMPILER_ID:GNU>:-Wpedantic -Wextra -Wall -Werror -Wconversion -Wshadow=local>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>)
 
 # If speed tests are enabled, pass that to the compiler

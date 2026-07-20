@@ -26,7 +26,8 @@ set_target_properties(aes
 # Use the following compile options
 target_compile_options(aes
     PRIVATE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wpedantic -Wextra -Wall -Werror -Wno-ignored-attributes -Wconversion -Wshadow>
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wpedantic -Wextra -Wall -Werror -Wconversion -Wshadow -Wno-ignored-attributes>
+        $<$<CXX_COMPILER_ID:GNU>:-Wpedantic -Wextra -Wall -Werror -Wconversion -Wshadow=local -Wno-ignored-attributes>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /Zc:__cplusplus>)
 
 # Ensure compiler knows if requested to build with Intel Intrinsics

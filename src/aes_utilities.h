@@ -91,10 +91,10 @@ constexpr void PutStateColumn(const AESInt32 value,
                               const std::size_t column,
                               std::span<std::uint8_t, 16> ciphertext)
 {
-    ciphertext[(column << 2U)    ] = (value >> 24U) & 0xffU;
-    ciphertext[(column << 2U) + 1] = (value >> 16U) & 0xffU;
-    ciphertext[(column << 2U) + 2] = (value >>  8U) & 0xffU;
-    ciphertext[(column << 2U) + 3] = (value       ) & 0xffU;
+    ciphertext[(column << 2U)    ] = static_cast<std::uint8_t>(value >> 24U);
+    ciphertext[(column << 2U) + 1] = static_cast<std::uint8_t>(value >> 16U);
+    ciphertext[(column << 2U) + 2] = static_cast<std::uint8_t>(value >>  8U);
+    ciphertext[(column << 2U) + 3] = static_cast<std::uint8_t>(value       );
 }
 
 /*

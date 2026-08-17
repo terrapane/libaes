@@ -1,5 +1,9 @@
 # Change Log
 
+v1.1.7
+
+- Updated dependencies
+
 v1.1.6
 
 - Updated dependencies

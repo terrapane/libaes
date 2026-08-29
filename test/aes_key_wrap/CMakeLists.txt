@@ -12,6 +12,16 @@ set_target_properties(test_aes_key_wrap
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF)
 
+# If requesting clang-tidy, try to look for it
+if(libaes_CLANG_TIDY)
+    find_program(CLANG_TIDY_COMMAND NAMES "clang-tidy")
+    if(CLANG_TIDY_COMMAND)
+        set_target_properties(test_aes_key_wrap PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
+    else()
+        message(WARNING "Could not find clang-tidy")
+    endif()
+endif()
+
 # Specify the compiler options
 target_compile_options(test_aes_key_wrap
     PRIVATE

@@ -18,116 +18,114 @@
  */
 
 #include <cstdint>
-#include <ostream>
-#include <iomanip>
 #include <vector>
+#include <array>
+#include <utility>
+#include <span>
 #include <terra/crypto/cipher/aes.h>
-#include <terra/stf/adapters/integral_array.h>
+#include <terra/stf/adapters/integral_array.h> // NOLINT(misc-include-cleaner)
 #include <terra/stf/stf.h>
+
+namespace
+{
 
 using namespace Terra::Crypto::Cipher::AES;
 
 // Test from Appendix B
 STF_TEST(AES, TestVectorBEncrypt128)
 {
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16>  plaintext =
     {
         0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
         0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16>  expected_ciphertext =
     {
         0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb,
         0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16>  ciphertext{};
 
     AES aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix C.1 (encryption)
 STF_TEST(AES, TestVectorC1Encrypt128)
 {
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AES aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix C.2 (encryption)
 STF_TEST(AES, TestVectorC2Encrypt192)
 {
-    const std::uint8_t aes_key[24] =
+    const std::array<std::uint8_t, 24> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
         0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0xdd, 0xa9, 0x7c, 0xa4, 0x86, 0x4c, 0xdf, 0xe0,
         0x6e, 0xaf, 0x70, 0xa0, 0xec, 0x0d, 0x71, 0x91
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AES aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix C.3 (encryption)
 STF_TEST(AES, TestVectorC3Encrypt256)
 {
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -135,130 +133,122 @@ STF_TEST(AES, TestVectorC3Encrypt256)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AES aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix B
 STF_TEST(AES, TestVectorBDecrypt128)
 {
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb,
         0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
         0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AES aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test from Appendix C.1 (decryption)
 STF_TEST(AES, TestVectorC1Decrypt128)
 {
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AES aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test from Appendix C.2 (decryption)
 STF_TEST(AES, TestVectorC2Decrypt192)
 {
-    const std::uint8_t aes_key[24] =
+    const std::array<std::uint8_t, 24> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
         0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0xdd, 0xa9, 0x7c, 0xa4, 0x86, 0x4c, 0xdf, 0xe0,
         0x6e, 0xaf, 0x70, 0xa0, 0xec, 0x0d, 0x71, 0x91
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AES aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test from Appendix C.3 (decryption)
 STF_TEST(AES, TestVectorC3Decrypt256)
 {
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -266,27 +256,25 @@ STF_TEST(AES, TestVectorC3Decrypt256)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AES aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test copy constructor
@@ -294,7 +282,7 @@ STF_TEST(AES, TestCopyConstructor)
 {
     AES aes1;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -302,19 +290,19 @@ STF_TEST(AES, TestCopyConstructor)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -323,9 +311,7 @@ STF_TEST(AES, TestCopyConstructor)
 
     aes2.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test move constructor
@@ -333,7 +319,7 @@ STF_TEST(AES, TestMoveConstructor)
 {
     AES aes1;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -341,19 +327,19 @@ STF_TEST(AES, TestMoveConstructor)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -362,9 +348,7 @@ STF_TEST(AES, TestMoveConstructor)
 
     aes2.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test assignment
@@ -372,7 +356,7 @@ STF_TEST(AES, TestAssignment)
 {
     AES aes1, aes2;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -380,19 +364,19 @@ STF_TEST(AES, TestAssignment)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -400,9 +384,7 @@ STF_TEST(AES, TestAssignment)
 
     aes2.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test equality
@@ -410,7 +392,7 @@ STF_TEST(AES, TestAESEquality)
 {
     AES aes1, aes2;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -430,7 +412,7 @@ STF_TEST(AES, TestAESInequality)
 {
     AES aes1, aes2;
 
-    const std::uint8_t aes_key1[32] =
+    const std::array<std::uint8_t, 32> aes_key1 =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -438,7 +420,7 @@ STF_TEST(AES, TestAESInequality)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t aes_key2[32] =
+    const std::array<std::uint8_t, 32> aes_key2 =
     {
         0x99, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -457,7 +439,7 @@ STF_TEST(AES, TestAESSetKey)
 {
     AES aes1, aes2;
 
-    const std::uint8_t aes_key1[32] =
+    std::array<std::uint8_t, 32> aes_key1 =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -564,3 +546,5 @@ STF_TEST(AES, TestDecryptVectorAPI)
     // at the top of this file
     STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
+
+} // namespace

@@ -3,6 +3,7 @@
 v1.1.7
 
 - Updated dependencies
+- Updated unit tests to support clang-tidy
 
 v1.1.6
 

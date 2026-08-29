@@ -16,16 +16,23 @@
  *      None.
  */
 
+#include <cstddef>
 #include <cstdint>
-#include <ostream>
-#include <iomanip>
+#include <iostream>
+#include <array>
 #include <vector>
 #include <bit>
+#include <span>
+#include <utility>
 #include <intel_intrinsics.h>
 #include <aes_intel.h>
 #include <cpu_check.h>
-#include <terra/stf/adapters/integral_vector.h>
+#include <terra/crypto/cipher/aes.h>
+#include <terra/stf/adapters/integral_vector.h> // NOLINT(misc-include-cleaner)
 #include <terra/stf/stf.h>
+
+namespace
+{
 
 using namespace Terra::Crypto::Cipher::AES;
 
@@ -36,11 +43,11 @@ STF_TEST(AESIntel, EngineCheck)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    AESIntel aes;
+    const AESIntel aes;
 
     STF_ASSERT_EQ(aes.GetEngineType(), AESEngineType::Intel);
 }
@@ -50,18 +57,18 @@ STF_TEST(AESIntel, TestKeyExpansion128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
 
     // Expected values of W
-    const std::uint32_t Expected_W[60]
+    const std::array<std::uint32_t, 60> Expected_W =
     {
         0x2b7e1516, 0x28aed2a6, 0xabf71588, 0x09cf4f3c,
         0xa0fafe17, 0x88542cb1, 0x23a33939, 0x2a6c7605,
@@ -83,7 +90,7 @@ STF_TEST(AESIntel, TestKeyExpansion128)
     };
 
     // Expected values of DW
-    const std::uint32_t Expected_DW[60]
+    const std::array<std::uint32_t, 60> Expected_DW =
     {
         0xd014f9a8, 0xc9ee2589, 0xe13f0cc8, 0xb6630ca6,
         0x0c7b5a63, 0x1319eafe, 0xb0398890, 0x664cfbb4,
@@ -105,14 +112,15 @@ STF_TEST(AESIntel, TestKeyExpansion128)
     };
 
     // Copy of the W and DW vectors produced
-    std::uint32_t W_vec[sizeof(Expected_W)]{};
-    std::uint32_t DW_vec[sizeof(Expected_DW)]{};
+    std::array<std::uint32_t, 60> W_vec{};
+    std::array<std::uint32_t, 60> DW_vec{};
 
     // Define derived object so we can inspect internals
     class AESIntel_ : public AESIntel
     {
         public:
-            AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
+            explicit AESIntel_(std::span<const std::uint8_t> key) :
+                AESIntel(key)
             {
                 // Nothing to do here
             }
@@ -128,8 +136,11 @@ STF_TEST(AESIntel, TestKeyExpansion128)
     // Write the aes.W and aes.DW vectors into memory
     for (std::size_t i = 0; i <= 10; i++)
     {
-        _mm_storeu_si128((__m128i *) &W_vec[i * 4], aes.W[i]);
-        _mm_storeu_si128((__m128i *) &DW_vec[i * 4], aes.DW[i]);
+        // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&W_vec[i * 4]), aes.W[i]);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&DW_vec[i * 4]),
+                         aes.DW[i]);
+        // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
     }
 
     // The _mm_storeu_si128() call stores integers such that they appear to
@@ -137,22 +148,24 @@ STF_TEST(AESIntel, TestKeyExpansion128)
     // little endian processor
     if constexpr (std::endian::native == std::endian::little)
     {
-        for (std::size_t i = 0; i < sizeof(W_vec) / sizeof(W_vec[0]); i++)
+        for (std::size_t i = 0; i < W_vec.size(); i++)
         {
-            W_vec[i] = ((W_vec[i] >> 24) & 0x000000ff) |
-                       ((W_vec[i] >>  8) & 0x0000ff00) |
-                       ((W_vec[i] <<  8) & 0x00ff0000) |
-                       ((W_vec[i] << 24) & 0xff000000);
-            DW_vec[i] = ((DW_vec[i] >> 24) & 0x000000ff) |
-                        ((DW_vec[i] >>  8) & 0x0000ff00) |
-                        ((DW_vec[i] <<  8) & 0x00ff0000) |
-                        ((DW_vec[i] << 24) & 0xff000000);
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+            W_vec[i] = ((W_vec[i] >> 24U) & 0x000000ffU) |
+                       ((W_vec[i] >>  8U) & 0x0000ff00U) |
+                       ((W_vec[i] <<  8U) & 0x00ff0000U) |
+                       ((W_vec[i] << 24U) & 0xff000000U);
+            DW_vec[i] = ((DW_vec[i] >> 24U) & 0x000000ffU) |
+                        ((DW_vec[i] >>  8U) & 0x0000ff00U) |
+                        ((DW_vec[i] <<  8U) & 0x00ff0000U) |
+                        ((DW_vec[i] << 24U) & 0xff000000U);
+            // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
         }
     }
 
     // Verify that the key expansion produced the expected values
-    STF_ASSERT_MEM_EQ(Expected_W, W_vec, sizeof(Expected_W));
-    STF_ASSERT_MEM_EQ(Expected_DW, DW_vec, sizeof(Expected_DW));
+    STF_ASSERT_EQ(Expected_W, W_vec);
+    STF_ASSERT_EQ(Expected_DW, DW_vec);
 }
 
 // Test from Appendix A.2
@@ -160,11 +173,11 @@ STF_TEST(AESIntel, TestKeyExpansion192)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[24] =
+    const std::array<std::uint8_t, 24> aes_key =
     {
         0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52,
         0xc8, 0x10, 0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -172,7 +185,7 @@ STF_TEST(AESIntel, TestKeyExpansion192)
     };
 
     // Expected values of W
-    const std::uint32_t Expected_W[60]
+    const std::array<std::uint32_t, 60> Expected_W =
     {
         0x8e73b0f7, 0xda0e6452, 0xc810f32b, 0x809079e5,
         0x62f8ead2, 0x522c6b7b, 0xfe0c91f7, 0x2402f5a5,
@@ -194,7 +207,7 @@ STF_TEST(AESIntel, TestKeyExpansion192)
     };
 
     // Expected values of DW
-    const std::uint32_t Expected_DW[60]
+    const std::array<std::uint32_t, 60> Expected_DW =
     {
         0xe98ba06f, 0x448c773c, 0x8ecc7204, 0x01002202,
         0xac491644, 0xe55710b7, 0x46c08a75, 0xc89b2cad,
@@ -216,14 +229,15 @@ STF_TEST(AESIntel, TestKeyExpansion192)
     };
 
     // Copy of the W and DW vectors produced
-    std::uint32_t W_vec[sizeof(Expected_W)]{};
-    std::uint32_t DW_vec[sizeof(Expected_DW)]{};
+    std::array<std::uint32_t, 60> W_vec{};
+    std::array<std::uint32_t, 60> DW_vec{};
 
     // Define derived object so we can inspect internals
     class AESIntel_ : public AESIntel
     {
         public:
-            AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
+            explicit AESIntel_(std::span<const std::uint8_t> key) :
+                AESIntel(key)
             {
                 // Nothing to do here
             }
@@ -239,8 +253,11 @@ STF_TEST(AESIntel, TestKeyExpansion192)
     // Write the aes.W and aes.DW vectors into memory
     for (std::size_t i = 0; i <= 12; i++)
     {
-        _mm_storeu_si128((__m128i *) &W_vec[i * 4], aes.W[i]);
-        _mm_storeu_si128((__m128i *) &DW_vec[i * 4], aes.DW[i]);
+        // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&W_vec[i * 4]), aes.W[i]);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&DW_vec[i * 4]),
+                         aes.DW[i]);
+        // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
     }
 
     // The _mm_storeu_si128() call stores integers such that they appear to
@@ -248,22 +265,24 @@ STF_TEST(AESIntel, TestKeyExpansion192)
     // little endian processor
     if constexpr (std::endian::native == std::endian::little)
     {
-        for (std::size_t i = 0; i < sizeof(W_vec) / sizeof(W_vec[0]); i++)
+        for (std::size_t i = 0; i < W_vec.size(); i++)
         {
-            W_vec[i] = ((W_vec[i] >> 24) & 0x000000ff) |
-                       ((W_vec[i] >>  8) & 0x0000ff00) |
-                       ((W_vec[i] <<  8) & 0x00ff0000) |
-                       ((W_vec[i] << 24) & 0xff000000);
-            DW_vec[i] = ((DW_vec[i] >> 24) & 0x000000ff) |
-                        ((DW_vec[i] >>  8) & 0x0000ff00) |
-                        ((DW_vec[i] <<  8) & 0x00ff0000) |
-                        ((DW_vec[i] << 24) & 0xff000000);
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+            W_vec[i] = ((W_vec[i] >> 24U) & 0x000000ffU) |
+                       ((W_vec[i] >>  8U) & 0x0000ff00U) |
+                       ((W_vec[i] <<  8U) & 0x00ff0000U) |
+                       ((W_vec[i] << 24U) & 0xff000000U);
+            DW_vec[i] = ((DW_vec[i] >> 24U) & 0x000000ffU) |
+                        ((DW_vec[i] >>  8U) & 0x0000ff00U) |
+                        ((DW_vec[i] <<  8U) & 0x00ff0000U) |
+                        ((DW_vec[i] << 24U) & 0xff000000U);
+            // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
         }
     }
 
     // Verify that the key expansion produced the expected values
-    STF_ASSERT_MEM_EQ(Expected_W, W_vec, sizeof(Expected_W));
-    STF_ASSERT_MEM_EQ(Expected_DW, DW_vec, sizeof(Expected_DW));
+    STF_ASSERT_EQ(Expected_W, W_vec);
+    STF_ASSERT_EQ(Expected_DW, DW_vec);
 }
 
 // Test from Appendix A.3
@@ -271,11 +290,11 @@ STF_TEST(AESIntel, TestKeyExpansion256)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
         0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -284,7 +303,7 @@ STF_TEST(AESIntel, TestKeyExpansion256)
     };
 
     // Expected values of W
-    const std::uint32_t Expected_W[60]
+    const std::array<std::uint32_t, 60> Expected_W =
     {
         0x603deb10, 0x15ca71be, 0x2b73aef0, 0x857d7781,
         0x1f352c07, 0x3b6108d7, 0x2d9810a3, 0x0914dff4,
@@ -304,7 +323,7 @@ STF_TEST(AESIntel, TestKeyExpansion256)
     };
 
     // Expected values of DW
-    const std::uint32_t Expected_DW[60]
+    const std::array<std::uint32_t, 60> Expected_DW =
     {
         0xfe4890d1, 0xe6188d0b, 0x046df344, 0x706c631e,
         0xada23f49, 0x63e23b24, 0x55427c8a, 0x5c709104,
@@ -324,14 +343,14 @@ STF_TEST(AESIntel, TestKeyExpansion256)
     };
 
     // Copy of the W and DW vectors produced
-    std::uint32_t W_vec[sizeof(Expected_W)]{};
-    std::uint32_t DW_vec[sizeof(Expected_DW)]{};
+    std::array<std::uint32_t, 60> W_vec{};
+    std::array<std::uint32_t, 60> DW_vec{};
 
     // Define derived object so we can inspect internals
     class AESIntel_ : public AESIntel
     {
         public:
-            AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
+            explicit AESIntel_(std::span<const std::uint8_t> key) : AESIntel(key)
             {
                 // Nothing to do here
             }
@@ -347,8 +366,11 @@ STF_TEST(AESIntel, TestKeyExpansion256)
     // Write the aes.W vector into memory
     for (std::size_t i = 0; i <= 14; i++)
     {
-        _mm_storeu_si128((__m128i *) &W_vec[i * 4], aes.W[i]);
-        _mm_storeu_si128((__m128i *) &DW_vec[i * 4], aes.DW[i]);
+        // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&W_vec[i * 4]), aes.W[i]);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&DW_vec[i * 4]),
+                         aes.DW[i]);
+        // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
     }
 
     // The _mm_storeu_si128() call stores integers such that they appear to
@@ -356,22 +378,24 @@ STF_TEST(AESIntel, TestKeyExpansion256)
     // little endian processor
     if constexpr (std::endian::native == std::endian::little)
     {
-        for (std::size_t i = 0; i < sizeof(W_vec) / sizeof(W_vec[0]); i++)
+        for (std::size_t i = 0; i < W_vec.size(); i++)
         {
-            W_vec[i] = ((W_vec[i] >> 24) & 0x000000ff) |
-                       ((W_vec[i] >>  8) & 0x0000ff00) |
-                       ((W_vec[i] <<  8) & 0x00ff0000) |
-                       ((W_vec[i] << 24) & 0xff000000);
-            DW_vec[i] = ((DW_vec[i] >> 24) & 0x000000ff) |
-                        ((DW_vec[i] >>  8) & 0x0000ff00) |
-                        ((DW_vec[i] <<  8) & 0x00ff0000) |
-                        ((DW_vec[i] << 24) & 0xff000000);
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+            W_vec[i] = ((W_vec[i] >> 24U) & 0x000000ffU) |
+                       ((W_vec[i] >>  8U) & 0x0000ff00U) |
+                       ((W_vec[i] <<  8U) & 0x00ff0000U) |
+                       ((W_vec[i] << 24U) & 0xff000000U);
+            DW_vec[i] = ((DW_vec[i] >> 24U) & 0x000000ffU) |
+                        ((DW_vec[i] >>  8U) & 0x0000ff00U) |
+                        ((DW_vec[i] <<  8U) & 0x00ff0000U) |
+                        ((DW_vec[i] << 24U) & 0xff000000U);
+            // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
         }
     }
 
     // Verify that the key expansion produced the expected values
-    STF_ASSERT_MEM_EQ(Expected_W, W_vec, sizeof(Expected_W));
-    STF_ASSERT_MEM_EQ(Expected_DW, DW_vec, sizeof(Expected_DW));
+    STF_ASSERT_EQ(Expected_W, W_vec);
+    STF_ASSERT_EQ(Expected_DW, DW_vec);
 }
 
 // Test from Appendix B
@@ -379,37 +403,35 @@ STF_TEST(AESIntel, TestVectorBEncrypt128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
         0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb,
         0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESIntel aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix C.1 (encryption)
@@ -417,37 +439,35 @@ STF_TEST(AESIntel, TestVectorC1Encrypt128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESIntel aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix C.2 (encryption)
@@ -455,38 +475,36 @@ STF_TEST(AESIntel, TestVectorC2Encrypt192)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[24] =
+    const std::array<std::uint8_t, 24> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
         0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0xdd, 0xa9, 0x7c, 0xa4, 0x86, 0x4c, 0xdf, 0xe0,
         0x6e, 0xaf, 0x70, 0xa0, 0xec, 0x0d, 0x71, 0x91
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESIntel aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix C.3 (encryption)
@@ -494,11 +512,11 @@ STF_TEST(AESIntel, TestVectorC3Encrypt256)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -506,27 +524,25 @@ STF_TEST(AESIntel, TestVectorC3Encrypt256)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESIntel aes(aes_key);
 
     aes.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test from Appendix B
@@ -534,37 +550,35 @@ STF_TEST(AESIntel, TestVectorBDecrypt128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb,
         0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
         0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESIntel aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test from Appendix C.1 (decryption)
@@ -572,37 +586,35 @@ STF_TEST(AESIntel, TestVectorC1Decrypt128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESIntel aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test from Appendix C.2 (decryption)
@@ -610,38 +622,36 @@ STF_TEST(AESIntel, TestVectorC2Decrypt192)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[24] =
+    const std::array<std::uint8_t, 24> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
         0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0xdd, 0xa9, 0x7c, 0xa4, 0x86, 0x4c, 0xdf, 0xe0,
         0x6e, 0xaf, 0x70, 0xa0, 0xec, 0x0d, 0x71, 0x91
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESIntel aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test from Appendix C.3 (decryption)
@@ -649,11 +659,11 @@ STF_TEST(AESIntel, TestVectorC3Decrypt256)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -661,27 +671,25 @@ STF_TEST(AESIntel, TestVectorC3Decrypt256)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t ciphertext[16] =
+    const std::array<std::uint8_t, 16> ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::uint8_t plaintext[16];
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESIntel aes(aes_key);
 
     aes.Decrypt(ciphertext, plaintext);
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      plaintext,
-                      sizeof(expected_plaintext));
+    STF_ASSERT_EQ(expected_plaintext, plaintext);
 }
 
 // Test copy constructor
@@ -689,13 +697,13 @@ STF_TEST(AESIntel, TestCopyConstructor)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
     AESIntel aes1;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -703,19 +711,19 @@ STF_TEST(AESIntel, TestCopyConstructor)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -724,9 +732,8 @@ STF_TEST(AESIntel, TestCopyConstructor)
 
     aes2.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
+
 }
 
 // Test move constructor
@@ -734,13 +741,13 @@ STF_TEST(AESIntel, TestMoveConstructor)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
     AESIntel aes1;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -748,19 +755,19 @@ STF_TEST(AESIntel, TestMoveConstructor)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -769,9 +776,7 @@ STF_TEST(AESIntel, TestMoveConstructor)
 
     aes2.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test assignment
@@ -779,13 +784,13 @@ STF_TEST(AESIntel, TestAssignment)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
     AESIntel aes1, aes2;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -793,19 +798,19 @@ STF_TEST(AESIntel, TestAssignment)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t plaintext[16] =
+    const std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::uint8_t ciphertext[16];
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -813,9 +818,7 @@ STF_TEST(AESIntel, TestAssignment)
 
     aes2.Encrypt(plaintext, ciphertext);
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      ciphertext,
-                      sizeof(expected_ciphertext));
+    STF_ASSERT_EQ(expected_ciphertext, ciphertext);
 }
 
 // Test equality
@@ -823,13 +826,13 @@ STF_TEST(AESIntel, TestAESEquality)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
     AESIntel aes1, aes2;
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -849,13 +852,13 @@ STF_TEST(AESIntel, TestAESInequality)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
     AESIntel aes1, aes2;
 
-    const std::uint8_t aes_key1[32] =
+    const std::array<std::uint8_t, 32> aes_key1 =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -863,7 +866,7 @@ STF_TEST(AESIntel, TestAESInequality)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    const std::uint8_t aes_key2[32] =
+    const std::array<std::uint8_t, 32> aes_key2 =
     {
         0x99, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -882,13 +885,13 @@ STF_TEST(AESIntel, TestAESSetKey)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
     AESIntel aes1, aes2;
 
-    const std::uint8_t aes_key1[32] =
+    const std::array<std::uint8_t, 32> aes_key1 =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -931,7 +934,7 @@ STF_TEST(AESIntel, TestEncryptVectorAPI)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
@@ -972,7 +975,7 @@ STF_TEST(AESIntel, TestDecryptVectorAPI)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
@@ -1013,23 +1016,23 @@ STF_TEST(AESIntel, EncryptionSpeedTest128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
     };
 
-    std::uint8_t plaintext[16] =
+    std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0xa3, 0x19, 0xcf, 0x4b, 0xfe, 0xe5, 0x40, 0x20,
         0x54, 0x83, 0x34, 0x2b, 0x51, 0xca, 0xa7, 0xbd
@@ -1040,12 +1043,12 @@ STF_TEST(AESIntel, EncryptionSpeedTest128)
     // Encrypt in place repeatedly
     for (std::uint64_t i = 0; i < 200'000'000; i++)
     {
+        // Encrypting in place...
         aes.Encrypt(plaintext, plaintext);
     }
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      plaintext,
-                      sizeof(expected_ciphertext));
+    // Encryption is in place, so ciphertext is in plaintext array
+    STF_ASSERT_EQ(expected_ciphertext, plaintext);
 }
 
 // This function tests the performance of the encryption code
@@ -1053,11 +1056,11 @@ STF_TEST(AESIntel, EncryptionSpeedTest256)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -1065,13 +1068,13 @@ STF_TEST(AESIntel, EncryptionSpeedTest256)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    std::uint8_t plaintext[16] =
+    std::array<std::uint8_t, 16> plaintext =
     {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    const std::uint8_t expected_ciphertext[16] =
+    const std::array<std::uint8_t, 16> expected_ciphertext =
     {
         0x2c, 0x8f, 0x82, 0x94, 0x60, 0x3a, 0x9c, 0xcb,
         0xd3, 0xd0, 0x3b, 0x05, 0xea, 0x5a, 0x89, 0xc1
@@ -1082,12 +1085,12 @@ STF_TEST(AESIntel, EncryptionSpeedTest256)
     // Encrypt in place repeatedly
     for (std::uint64_t i = 0; i < 200'000'000; i++)
     {
+        // Encrypting in place...
         aes.Encrypt(plaintext, plaintext);
     }
 
-    STF_ASSERT_MEM_EQ(expected_ciphertext,
-                      plaintext,
-                      sizeof(expected_ciphertext));
+    // Test encrypts in place, so ciphertext is in plaintext array
+    STF_ASSERT_EQ(expected_ciphertext, plaintext);
 }
 
 // This function tests the performance of the decryption code
@@ -1095,23 +1098,23 @@ STF_TEST(AESIntel, DecryptionSpeedTest128)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[16] =
+    const std::array<std::uint8_t, 16> aes_key =
     {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
 
-    std::uint8_t ciphertext[16] =
+    std::array<std::uint8_t, 16> ciphertext =
     {
         0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb,
         0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0xc8, 0x2c, 0x2b, 0x8a, 0x94, 0x4f, 0x8b, 0xc5,
         0x93, 0x29, 0xc2, 0x8c, 0xd7, 0x8e, 0x7b, 0x71
@@ -1122,12 +1125,12 @@ STF_TEST(AESIntel, DecryptionSpeedTest128)
     // Decrypt in place repeatedly
     for (std::uint64_t i = 0; i < 200'000'000; i++)
     {
+        // Decrypting in place...
         aes.Decrypt(ciphertext, ciphertext);
     }
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      ciphertext,
-                      sizeof(expected_plaintext));
+    // Decryption was in place, so plaintext is in the ciphertext array
+    STF_ASSERT_EQ(expected_plaintext, ciphertext);
 }
 
 // This function tests the performance of the decryption code
@@ -1135,11 +1138,11 @@ STF_TEST(AESIntel, DecryptionSpeedTest256)
 {
     if (!CPUSupportsAES_NI())
     {
-        std::cerr << "AES-NI is not supported on this processor" << std::endl;
+        std::cerr << "AES-NI is not supported on this processor" << '\n';
         return;
     }
 
-    const std::uint8_t aes_key[32] =
+    const std::array<std::uint8_t, 32> aes_key =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -1147,13 +1150,13 @@ STF_TEST(AESIntel, DecryptionSpeedTest256)
         0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
     };
 
-    std::uint8_t ciphertext[16] =
+    std::array<std::uint8_t, 16> ciphertext =
     {
         0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    const std::uint8_t expected_plaintext[16] =
+    const std::array<std::uint8_t, 16> expected_plaintext =
     {
         0xe8, 0x33, 0x93, 0x98, 0x27, 0xba, 0xdb, 0x29,
         0xd5, 0xc1, 0xe0, 0x29, 0x2d, 0x0f, 0xd0, 0x0d
@@ -1164,12 +1167,12 @@ STF_TEST(AESIntel, DecryptionSpeedTest256)
     // Decrypt in place repeatedly
     for (std::uint64_t i = 0; i < 200'000'000; i++)
     {
+        // Decrypting in place...
         aes.Decrypt(ciphertext, ciphertext);
     }
 
-    STF_ASSERT_MEM_EQ(expected_plaintext,
-                      ciphertext,
-                      sizeof(expected_plaintext));
+    // Decryption was in place, so plaintext is in the ciphertext array
+    STF_ASSERT_EQ(expected_plaintext, ciphertext);
 }
 
 #ifndef TERRA_ENABLE_AES_SPEED_TESTS
@@ -1190,3 +1193,5 @@ STF_TEST(AESIntel, EngineCheck)
 }
 
 #endif // TERRA_USE_INTEL_INTRINSICS
+
+} // namespace

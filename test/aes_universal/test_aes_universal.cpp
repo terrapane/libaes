@@ -17,22 +17,26 @@
  */
 
 #include <cstdint>
-#include <ostream>
-#include <iomanip>
 #include <vector>
 #include <array>
-#include <aes_universal.h>
-#include <terra/stf/adapters/integral_array.h>
-#include <terra/stf/adapters/integral_vector.h>
+#include <span>
+#include <utility>
+#include <terra/crypto/cipher/aes.h>
+#include <terra/stf/adapters/integral_array.h> // NOLINT(misc-include-cleaner)
+#include <terra/stf/adapters/integral_vector.h> // NOLINT(misc-include-cleaner)
 #include <terra/stf/stf.h>
+#include "aes_universal.h"
 #include "aes_definitions.h"
+
+namespace
+{
 
 using namespace Terra::Crypto::Cipher::AES;
 
 // Test the function that indicated the engine type
 STF_TEST(AESUniversal, EngineCheck)
 {
-    AESUniversal aes;
+    const AESUniversal aes;
 
     STF_ASSERT_EQ(aes.GetEngineType(), AESEngineType::Universal);
 }
@@ -94,7 +98,7 @@ STF_TEST(AESUniversal, TestKeyExpansion128)
     class AESUniversal_ : public AESUniversal
     {
         public:
-            AESUniversal_(std::span<const std::uint8_t> key) :
+            explicit AESUniversal_(std::span<const std::uint8_t> key) :
                 AESUniversal(key)
             {
                 // Nothing to do here
@@ -106,7 +110,7 @@ STF_TEST(AESUniversal, TestKeyExpansion128)
     };
 
     // Construct an AES object
-    AESUniversal_ aes(aes_key);
+    const AESUniversal_ aes(aes_key);
 
     // Verify that the key expansion produced the expected values
     STF_ASSERT_EQ(Expected_W, aes.W);
@@ -171,7 +175,7 @@ STF_TEST(AESUniversal, TestKeyExpansion192)
     class AESUniversal_ : public AESUniversal
     {
         public:
-            AESUniversal_(std::span<const std::uint8_t> key) :
+            explicit AESUniversal_(std::span<const std::uint8_t> key) :
                 AESUniversal(key)
             {
                 // Nothing to do here
@@ -183,7 +187,7 @@ STF_TEST(AESUniversal, TestKeyExpansion192)
     };
 
     // Construct an AES object
-    AESUniversal_ aes(aes_key);
+    const AESUniversal_ aes(aes_key);
 
     // Verify that the key expansion produced the expected values
     STF_ASSERT_EQ(Expected_W, aes.W);
@@ -245,7 +249,7 @@ STF_TEST(AESUniversal, TestKeyExpansion256)
     class AESUniversal_ : public AESUniversal
     {
         public:
-            AESUniversal_(std::span<const std::uint8_t> key) :
+            explicit AESUniversal_(std::span<const std::uint8_t> key) :
                 AESUniversal(key)
             {
                 // Nothing to do here
@@ -257,7 +261,7 @@ STF_TEST(AESUniversal, TestKeyExpansion256)
     };
 
     // Construct an AES object
-    AESUniversal_ aes(aes_key);
+    const AESUniversal_ aes(aes_key);
 
     // Verify that the key expansion produced the expected values
     STF_ASSERT_EQ(Expected_W, aes.W);
@@ -285,7 +289,7 @@ STF_TEST(AESUniversal, TestVectorBEncrypt128)
         0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESUniversal aes(aes_key);
 
@@ -315,7 +319,7 @@ STF_TEST(AESUniversal, TestVectorC1Encrypt128)
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESUniversal aes(aes_key);
 
@@ -346,7 +350,7 @@ STF_TEST(AESUniversal, TestVectorC2Encrypt192)
         0x6e, 0xaf, 0x70, 0xa0, 0xec, 0x0d, 0x71, 0x91
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESUniversal aes(aes_key);
 
@@ -378,7 +382,7 @@ STF_TEST(AESUniversal, TestVectorC3Encrypt256)
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESUniversal aes(aes_key);
 
@@ -408,7 +412,7 @@ STF_TEST(AESUniversal, TestVectorBDecrypt128)
         0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
     };
 
-    std::array<std::uint8_t, 16> plaintext;
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESUniversal aes(aes_key);
 
@@ -438,7 +442,7 @@ STF_TEST(AESUniversal, TestVectorC1Decrypt128)
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::array<std::uint8_t, 16> plaintext;
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESUniversal aes(aes_key);
 
@@ -469,7 +473,7 @@ STF_TEST(AESUniversal, TestVectorC2Decrypt192)
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::array<std::uint8_t, 16> plaintext;
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESUniversal aes(aes_key);
 
@@ -501,7 +505,7 @@ STF_TEST(AESUniversal, TestVectorC3Decrypt256)
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::array<std::uint8_t, 16> plaintext;
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESUniversal aes(aes_key);
 
@@ -535,7 +539,7 @@ STF_TEST(AESUniversal, TestCopyConstructor)
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -572,7 +576,7 @@ STF_TEST(AESUniversal, TestMoveConstructor)
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -609,7 +613,7 @@ STF_TEST(AESUniversal, TestAssignment)
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     aes1.SetKey(aes_key);
 
@@ -733,7 +737,7 @@ STF_TEST(AESUniversal, TestEncryptVectorAPI)
         0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89
     };
 
-    std::array<std::uint8_t, 16> ciphertext;
+    std::array<std::uint8_t, 16> ciphertext{};
 
     AESUniversal aes(aes_key);
 
@@ -767,7 +771,7 @@ STF_TEST(AESUniversal, TestDecryptVectorAPI)
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
     };
 
-    std::array<std::uint8_t, 16> plaintext;
+    std::array<std::uint8_t, 16> plaintext{};
 
     AESUniversal aes(aes_key);
 
@@ -917,3 +921,5 @@ STF_TEST_EXCLUDE(AESUniversal, EncryptionSpeedTest256);
 STF_TEST_EXCLUDE(AESUniversal, DecryptionSpeedTest128);
 STF_TEST_EXCLUDE(AESUniversal, DecryptionSpeedTest256);
 #endif // TERRA_ENABLE_AES_SPEED_TESTS
+
+} // namespace

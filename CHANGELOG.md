@@ -1,5 +1,9 @@
 # Change Log
 
+v1.1.8 (in progress)
+
+- Ensure speed tests are enabled consistently
+
 v1.1.7
 
 - Updated dependencies

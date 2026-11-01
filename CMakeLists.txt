@@ -34,7 +34,7 @@ endif()
 option(libaes_ENABLE_INTEL_INTRINSICS "Enable Intel AES Intrinsics" ${TERRA_CHECK_INTEL_TARGET})
 
 # Option to enable speed test in the AES engine tests
-option(libaes_SPEED_TESTS "Enable AES Engine Speed Tests" OFF)
+option(libaes_ENABLE_AES_SPEED_TESTS "Enable AES Engine Speed Tests" OFF)
 
 include(CTest)
 
